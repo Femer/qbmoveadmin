@@ -41,7 +41,6 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
-#include "qbmoveAPI/qbmove_packages.h"
 #include "qbmoveAPI/qbmove_communications.h"
 
 #if defined(_WIN32) || defined(_WIN64)
