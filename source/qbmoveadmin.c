@@ -42,6 +42,7 @@
 #include <getopt.h>
 #include <string.h>
 #include "qbmoveAPI/qbmove_communications.h"
+#include "definitions.h"
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <windows.h>
@@ -52,12 +53,6 @@
 // #include <errno.h>   /* Error number definitions */
 // #include <termios.h> /* POSIX terminal control definitions */
 // #include <sys/ioctl.h>
-
-
-//===============================================================         define
-#define NUM_OF_SENSORS 3
-
-#define QBMOVE_FILE "./conf_files/qbmove.conf"
 
 
 
@@ -83,10 +78,12 @@ static const struct option longOpts[] = {
     { "serial_port", no_argument, NULL, 't' },    
     { "verbose", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
+    { "set_limit", no_argument, NULL, 'q' },
+    { "activate_limit", required_argument, NULL, 'w' },
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "g:i:k:admsu:o:f:z:prltvh?";
+static const char *optString = "g:i:k:admsu:o:f:z:prltvhqw:?";
 
 struct structglobal_args {
     int device_id;
@@ -98,15 +95,17 @@ struct structglobal_args {
     int flag_deactivation;      /* -d option */    
     int flag_pos_resolution;    /* -s option */    
     int flag_input_mode;        /* -m option */    
-    int flag_meas_multiplier;    /* -u option */    
-    int flag_meas_offset;        /* -o option */    
+    int flag_meas_multiplier;   /* -u option */    
+    int flag_meas_offset;       /* -o option */    
     int flag_filter;            /* -f option */    
-    int flag_deadzone;            /* -f option */    
+    int flag_deadzone;          /* -f option */    
     int flag_ping;              /* -p option */
-    int flag_restore;              /* -p option */
+    int flag_restore;           /* -p option */
     int flag_list_devices;      /* -l option */    
     int flag_serial_port;       /* -t option */    
     int flag_verbose;           /* -v option */
+    int flag_set_limit;         /* -q option */
+    int flag_activate_limit;    /* -w option */
     
     unsigned char           new_id;
     unsigned char           input_mode;
@@ -119,6 +118,7 @@ struct structglobal_args {
     float                   filter;
     float                   deadzone;
     unsigned char           startup_activation;
+    unsigned char           activate_limit;
 } global_args;
 
 //=====================================================     function definitions
@@ -259,6 +259,14 @@ int main (int argc, char **argv)
             break;            
         case 'v':
             global_args.flag_verbose = 1;
+            break;
+        case 'q':
+            global_args.flag_set_limit = 1;
+            break;
+        case 'w':
+            sscanf(optarg, "%d", &aux_int);
+            global_args.activate_limit = aux_int;
+            global_args.flag_activate_limit = 1;
             break;
         case 'h':
         case '?':
@@ -568,7 +576,7 @@ int main (int argc, char **argv)
         return 0;
     }
 
-//=====================================     restore factory default parameters
+//=======================================     restore factory default parameters
     
     if(global_args.flag_restore)
     {
@@ -581,6 +589,32 @@ int main (int argc, char **argv)
             puts("Closing the application.");
         
         return 0;
+    }
+
+//======================================================     set position limits
+
+    if (global_args.flag_set_limit) {
+        int32_t limits[4];
+        printf("\nInf limit 1: ");
+        scanf("%d", limits);
+        printf("\nSup limit 1: ");
+        scanf("%d", limits + 1);
+        printf("\nInf limit 2: ");
+        scanf("%d", limits + 2);
+        printf("\nSup limit 2: ");
+        scanf("%d", limits + 3);
+
+        printf("limits: %d, %d, %d, %d\n", limits[0], limits[1], limits[2], limits[3]);
+        commSetParam(&comm_settings_t, global_args.device_id,
+            PARAM_POS_LIMIT, &limits, 4);
+
+    }
+
+//==================================================     activate position limit
+
+    if (global_args.flag_activate_limit) {
+        commSetParam(&comm_settings_t, global_args.device_id,
+            PARAM_POS_LIMIT_FLAG, &global_args.activate_limit, 1);
     }
 
 //==========================     closing serial port and closing the application
