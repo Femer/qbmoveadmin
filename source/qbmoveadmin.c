@@ -229,12 +229,18 @@ int main (int argc, char **argv)
             global_args.flag_meas_multiplier = 1;
             break;
         case 'o':
-            sscanf( optarg,"%hd,%hd,%hd,%hd", 
-                    global_args.measurement_offset, 
-                    global_args.measurement_offset + 1, 
-                    global_args.measurement_offset + 2,
-                    global_args.measurement_offset + 3);
-                    
+            #if NUM_OF_SENSORS == 4
+                sscanf( optarg,"%hd,%hd,%hd,%hd", 
+                        global_args.measurement_offset, 
+                        global_args.measurement_offset + 1, 
+                        global_args.measurement_offset + 2,
+                        global_args.measurement_offset + 3);
+            #else
+                sscanf( optarg,"%hd,%hd,%hd", 
+                        global_args.measurement_offset, 
+                        global_args.measurement_offset + 1, 
+                        global_args.measurement_offset + 2);
+            #endif
             global_args.flag_meas_offset = 1;
             break;
         case 'f':
@@ -533,7 +539,7 @@ int main (int argc, char **argv)
             puts("Changing position offset.");
             
         commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_MEASUREMENT_OFFSET, global_args.measurement_offset, 4);
+            PARAM_MEASUREMENT_OFFSET, global_args.measurement_offset, NUM_OF_SENSORS);
         commStoreParams(&comm_settings_t, global_args.device_id);
                             
         if(global_args.flag_verbose)
@@ -606,15 +612,16 @@ int main (int argc, char **argv)
 
         printf("limits: %d, %d, %d, %d\n", limits[0], limits[1], limits[2], limits[3]);
         commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_POS_LIMIT, &limits, 4);
-
+            PARAM_POS_LIMIT, limits, 4);
+        commStoreParams(&comm_settings_t, global_args.device_id);
     }
 
 //==================================================     activate position limit
 
     if (global_args.flag_activate_limit) {
         commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_POS_LIMIT_FLAG, &global_args.activate_limit, 1);
+            PARAM_POS_LIMIT_FLAG, &(global_args.activate_limit), 1);
+        //commStoreParams(&comm_settings_t, global_args.device_id);
     }
 
 //==========================     closing serial port and closing the application
