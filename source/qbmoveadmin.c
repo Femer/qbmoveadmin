@@ -613,6 +613,7 @@ int main (int argc, char **argv)
         printf("limits: %d, %d, %d, %d\n", limits[0], limits[1], limits[2], limits[3]);
         commSetParam(&comm_settings_t, global_args.device_id,
             PARAM_POS_LIMIT, limits, 4);
+        usleep(100000);
         commStoreParams(&comm_settings_t, global_args.device_id);
     }
 
@@ -621,7 +622,7 @@ int main (int argc, char **argv)
     if (global_args.flag_activate_limit) {
         commSetParam(&comm_settings_t, global_args.device_id,
             PARAM_POS_LIMIT_FLAG, &(global_args.activate_limit), 1);
-        //commStoreParams(&comm_settings_t, global_args.device_id);
+        commStoreParams(&comm_settings_t, global_args.device_id);
     }
 
 //==========================     closing serial port and closing the application

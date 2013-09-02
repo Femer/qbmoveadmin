@@ -53,10 +53,11 @@ static const struct option longOpts[] = {
     { "test_force", no_argument, NULL, 'w'},
     { "set_zeros", no_argument, NULL, 'z'},
     { "use_gen_sin", no_argument, NULL, 'k'},
+    { "get_currents", no_argument, NULL, 'c'},
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "s:adgptvh?f:lwzk";
+static const char *optString = "s:adgptvh?f:lwzkc";
 
 struct global_args {
     int device_id_1, device_id_2;
@@ -72,12 +73,14 @@ struct global_args {
     int flag_test;					/* -w option */
     int flag_set_zeros;             /* -z option */
     int flag_use_gen_sin;           /* -k option */
+    int flag_get_currents;          /* -c option */
 
 
-    short int inputs[2];
+    short int inputs[NUM_OF_MOTORS];
     short int measurements_1[NUM_OF_SENSORS];  //board 1 daisy chain
 	short int measurements_2[NUM_OF_SENSORS];  //board 2 daisy chain
     short int measurement_offset[NUM_OF_SENSORS];
+    short int currents[NUM_OF_MOTORS];
     char filename[255];
     char log_file[255];
     
@@ -331,6 +334,9 @@ int main (int argc, char **argv)
             case 'w':
             	global_args_1.flag_test = 1;
             	break;
+            case 'c':
+                global_args_1.flag_get_currents = 1;
+                break;
             default:
                 display_usage();    
                 return 0;
@@ -552,7 +558,7 @@ int main (int argc, char **argv)
 
     }
 
-    //=====================================================     get measurements
+//=====================================================     get measurements
 
     if(global_args_1.flag_get_measurements)
     {
@@ -567,7 +573,22 @@ int main (int argc, char **argv)
         }
         printf("\n");
     }
+//==========================================================     get_currents
 
+    if(global_args_1.flag_get_currents) {
+        if(global_args_1.flag_verbose)
+            puts("Getting currents.");
+
+        while(1) {
+            commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
+                global_args_1.currents);
+
+            for (i = 0; i < 1; i++) {
+                printf("Current %d: %d\n", (i + 1), global_args_1.currents[i]);
+            }
+            usleep(100000);
+        }
+    }
     
 
 //=================================================================     activate
