@@ -11,16 +11,6 @@
 #include <termios.h>
 #include <unistd.h>
 
-//==================================================================     defines
-
-#define DEFAULT_RESOLUTION 1
-#define DEFAULT_ID 0
-#define DEFAULT_PROPORTIONAL_GAIN 0.1
-#define DEFAULT_INCREMENT 1 //in degree
-#define DEFAULT_STIFFNESS 20 //in degree
-
-#define DEG_TICK_MULTIPLIER 65536 / (360 * (1 + DEFAULT_RESOLUTION))
-
 //=============================================================     declarations
 
 int port_selection(char*);
@@ -29,6 +19,7 @@ int change_id();
 int set_resolution();
 int set_proportional_gain();
 int adjust_zeros();
+int test();
 
 //==================================================================     globals
 
@@ -55,6 +46,10 @@ int main(int argc, char **argv){
 
 	assert(adjust_zeros());
 
+	closeRS485(&comm_settings_t);
+
+	assert(test());
+
 	printf("Configuration completed\n");
 	return 1;
 }
@@ -67,6 +62,7 @@ int port_selection(char* my_port){
 	int aux_int;
 	int num_ports = 0;
 	char ports[10][255];
+	FILE *file;
 
 	while(1) {
 		num_ports = RS485listPorts(ports);
@@ -86,6 +82,16 @@ int port_selection(char* my_port){
 	        } else {
 	        	puts("Choice not available");
 	        }
+
+	        file = fopen(QBMOVE_FILE, "w+");
+			if (file == NULL) {
+				printf("Cannot open qbmove.conf\n");
+			}
+			fprintf(file,"serialport1 %s\n",ports[aux_int - 1]);
+			fprintf(file,"port_2_enabled %d\n", 0);
+			fprintf(file,"serialport2 %s\n",ports[aux_int - 1]);
+			fclose(file);
+
 	    } else {
 	        puts("No serial port available.");
 	        return 0;
@@ -288,3 +294,20 @@ int adjust_zeros(){
 
     return 1;
 }
+
+
+int test() {
+	char c;
+
+	printf("Do you want to perform a test cycle? [Y,n]\n");
+	c = getchar();
+	if (c == 'n' || c == 'N') {
+		return 1;
+	}
+
+	system("./bin/qbtest -r 1");
+
+	return 1;
+}
+
+/* END OF FILE */

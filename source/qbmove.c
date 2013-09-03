@@ -9,6 +9,8 @@
 
 //=================================================================     includes
 
+#include "qbmoveAPI/qbmove_communications.h"
+#include "definitions.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -17,10 +19,8 @@
 #include <getopt.h>
 #include <string.h>
 #include <sys/time.h>
-#include "qbmoveAPI/qbmove_communications.h"
 #include <math.h>
 #include <signal.h>
-#include "definitions.h"
 
 // #include <unistd.h>  /* UNIX standard function definitions */
 // #include <fcntl.h>   /* File control definitions */
