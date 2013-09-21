@@ -486,8 +486,14 @@ int main (int argc, char **argv)
     //==========================================     calculate correction factor
 
     // retrieve current resolution
-    while(commGetParam(&comm_settings_1, global_args_1.device_id_1,
-        PARAM_POS_RESOLUTION, resolution, 4) != 0) {}
+    // while(commGetParam(&comm_settings_1, global_args_1.device_id_1,
+    //     PARAM_POS_RESOLUTION, resolution, NUM_OF_SENSORS) != 0) {}
+
+    resolution[0] = 1;
+    resolution[1] = 1;
+    resolution[2] = 1;
+
+
 
     
     // calculate correction factor for every sensors
@@ -500,7 +506,7 @@ int main (int argc, char **argv)
 
     // add gear ratio to correction factor
     for (i = 0; i < NUM_OF_MOTORS; i++) {
-        correction_factor[i] = correction_factor[i]/gear_ratio[i];
+        correction_factor[i] = correction_factor[i] * gear_ratio[i];
     }
     
 
@@ -684,6 +690,9 @@ int main (int argc, char **argv)
 
         printf("inc1 %f, inc2 %f\n", inc_1, inc_2); //XXX
 
+        // activate motors
+        commActivate(&comm_settings_1, global_args_1.device_id_1, 1);
+
         // retrieve begin time
         gettimeofday(&begin, &foo);
 
@@ -781,6 +790,14 @@ int main (int argc, char **argv)
         
         signal(SIGINT, int_handler);
     
+        // write first line of log file
+        if (global_args_1.flag_log) {
+            for (k = 0; k < NUM_OF_SENSORS; k++) {
+                    fprintf(global_args_1.log_file_fd, "sensor_%d,\t", (k + 1));
+                }
+            fprintf(global_args_1.log_file_fd, "input_1,\tinput_2,\t");
+            fprintf(global_args_1.log_file_fd, "current_1,\tcurrent_2\n");
+        }
 
         for(i=0; i<num_values; i++) {     
             while (1) {
@@ -796,6 +813,9 @@ int main (int argc, char **argv)
                 error_counter++;
             }
 
+            commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
+                global_args_1.currents);
+
             for (k = 0; k < NUM_OF_SENSORS; k++) {
                 measurements[k] = global_args_1.measurements_1[k]/correction_factor[k];
             }
@@ -810,11 +830,13 @@ int main (int argc, char **argv)
         
             // write measurements in log file
             if (global_args_1.flag_log) {
-                for (k = 0; k < NUM_OF_SENSORS; i++) {
+                for (k = 0; k < NUM_OF_SENSORS; k++) {
                     fprintf(global_args_1.log_file_fd, "%f,\t", measurements[k]);
                 }
-                fprintf(global_args_1.log_file_fd, "%f,\t%f\n",
+                fprintf(global_args_1.log_file_fd, "%f,\t%f,\t",
                     array[0][i], array[1][i]);
+                fprintf(global_args_1.log_file_fd, "%d,\t%d\n",
+                    global_args_1.currents[0], global_args_1.currents[1]);
             }
         }
 
@@ -833,6 +855,7 @@ int main (int argc, char **argv)
         }
 
         //at the end, set motors to 0
+        usleep(500000);
         global_args_1.inputs[0] = 0;
         global_args_1.inputs[1] = 0;
         commSetInputs(&comm_settings_1, global_args_1.device_id_1,

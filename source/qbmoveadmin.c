@@ -212,7 +212,7 @@ int main (int argc, char **argv)
             puts("");
 
             for (i = 0; i < NUM_OF_SENSORS; i++) {
-                printf("\nChoose angle resolution for sensor #%d:\n", i);
+                printf("\nChoose angle resolution for sensor #%d:\n", (i + 1));
                 puts("");
                 scanf("%d", &aux_int);
                 global_args.pos_resolution[i] = aux_int;

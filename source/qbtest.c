@@ -10,10 +10,12 @@
 //==================================================================     defines
 
 #define REPETITION_PER_CYCLE 3
+#define BATCH_CYCLES 5 //number of cycle after which have a pause
 #define INF_LIMIT DEFAULT_INF_LIMIT / (DEFAULT_RESOLUTION * 2)
 #define SUP_LIMIT DEFAULT_SUP_LIMIT / (DEFAULT_RESOLUTION * 2)
 #define DELAY 1500000	//in microseconds
 #define LITTLE_DELAY 5000 //in microseconds
+#define PAUSE 60 //in seconds
 
 
 //===============================================================     structures
@@ -81,6 +83,9 @@ int main(int argc, char **argv){
 
     if (gv.flag_set_repetitions) {
     	while(repetitions--) {
+    		if (repetitions % BATCH_CYCLES) {
+    			sleep(PAUSE);
+    		}
     		cycle();
     	}
     }
@@ -182,16 +187,12 @@ int cycle() {
 			usleep(LITTLE_DELAY);
 		}
 
-		printf("inputs: %d, %d\n", inputs[0], inputs[1]);
-
 		for (j = 0; j < DEFAULT_MAX_EXCURSION - DEFAULT_STIFFNESS * 2; j++) {
 			inputs[0] -= 1 * DEG_TICK_MULTIPLIER;
 			inputs[1] -= 1 * DEG_TICK_MULTIPLIER;
 			commSetInputs(&comm_settings_t, device_id, inputs);
 			usleep(LITTLE_DELAY);
 		}
-
-		printf("inputs: %d, %d\n", inputs[0], inputs[1]);
 	}
 
 	// set to zero

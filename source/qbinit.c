@@ -15,8 +15,9 @@
 
 int port_selection(char*);
 int open_port(char*);
+int restore_params();
 int change_id();
-int set_resolution();
+int set_resolution(int);
 int set_proportional_gain();
 int adjust_zeros();
 int test();
@@ -38,13 +39,17 @@ int main(int argc, char **argv){
 
 	assert(open_port(port));
 
-	assert(change_id());
+	assert(restore_params());
 
-	assert(set_resolution());
+	assert(change_id());
 
 	assert(set_proportional_gain());
 
+	assert(set_resolution(0));
+
 	assert(adjust_zeros());
+
+	assert(set_resolution(DEFAULT_RESOLUTION));
 
 	closeRS485(&comm_settings_t);
 
@@ -77,20 +82,21 @@ int port_selection(char* my_port){
 	        scanf("%d", &aux_int);
 	        
 	        if( aux_int && (aux_int <= num_ports) ) {
-	            strcpy(my_port, ports[aux_int - 1]);
-	            return 1;          
+	            strcpy(my_port, ports[aux_int - 1]);          
 	        } else {
 	        	puts("Choice not available");
+	        	continue;
 	        }
 
 	        file = fopen(QBMOVE_FILE, "w+");
 			if (file == NULL) {
 				printf("Cannot open qbmove.conf\n");
 			}
-			fprintf(file,"serialport1 %s\n",ports[aux_int - 1]);
+			fprintf(file,"serialport1 %s\n", my_port);
 			fprintf(file,"port_2_enabled %d\n", 0);
-			fprintf(file,"serialport2 %s\n",ports[aux_int - 1]);
+			fprintf(file,"serialport2 %s\n", my_port);
 			fclose(file);
+			return 1;
 
 	    } else {
 	        puts("No serial port available.");
@@ -116,6 +122,17 @@ int open_port(char* port_s) {
     return 1;
 }
 
+int restore_params() {
+	printf("Restoring factory settings...");
+	fflush(stdout);
+
+	commRestoreParams(&comm_settings_t, device_id);
+
+	usleep(500000);
+    printf("Done.\n");
+    return 1;
+}
+
 
 int change_id() {
 	printf("Choose a new ID for the cube: ");
@@ -129,12 +146,16 @@ int change_id() {
     commStoreParams(&comm_settings_t, DEFAULT_ID);
 
     usleep(500000);
+
+    //verify ID
+    // commGetParam(&comm_settings_t, device_id,
+    //         PARAM_ID, &device_id, 1);
     printf("Done\n");
 	return 1;
 }
 
 
-int set_resolution() {
+int set_resolution(int res) {
 	int i;
 	unsigned char pos_resolution[NUM_OF_SENSORS];
 
@@ -142,7 +163,7 @@ int set_resolution() {
 	fflush(stdout);
 
 	for (i = 0; i < NUM_OF_SENSORS; i++) {
-		pos_resolution[i] = DEFAULT_RESOLUTION;
+		pos_resolution[i] = res;
 	}
 
 	commSetParam(&comm_settings_t, device_id,
@@ -157,11 +178,12 @@ int set_resolution() {
 int set_proportional_gain() {
 	float control_k = DEFAULT_PROPORTIONAL_GAIN;
 	printf("Setting proportional gain...");
+	fflush(stdout);
 
 	commSetParam(&comm_settings_t, device_id,
             PARAM_CONTROL_K, &control_k, 1);
     commStoreParams(&comm_settings_t, device_id);
-    usleep(100000);
+    usleep(500000);
     printf("DONE\n");
     return 1;
 }
@@ -184,6 +206,7 @@ int adjust_zeros(){
     commStoreParams(&comm_settings_t, device_id);
     usleep(100000);
 
+    printf("before get meas\n");
     // Reading current position
     while(commGetMeasurements(&comm_settings_t, device_id, measurements));
 
