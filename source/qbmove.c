@@ -326,8 +326,6 @@ int main (int argc, char **argv)
             case 'k':
                 global_args_1.flag_use_gen_sin = 1;
                 break;
-            case 'h':
-            case '?':
             case 'z':
                 global_args_1.flag_set_zeros = 1;
                 break;
@@ -337,6 +335,8 @@ int main (int argc, char **argv)
             case 'c':
                 global_args_1.flag_get_currents = 1;
                 break;
+            case 'h':
+            case '?':
             default:
                 display_usage();    
                 return 0;
@@ -571,9 +571,19 @@ int main (int argc, char **argv)
         if(global_args_1.flag_verbose)
             puts("Getting measurements.");
       
-		commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
+        commGetParam(&comm_settings_1, global_args_1.device_id_1,
+                PARAM_MEASUREMENT_OFFSET, global_args_1.measurements_1,3);
+
+		printf("Offsets: ");
+        for (i = 0; i < NUM_OF_SENSORS; i++) {
+            printf("%d\t", global_args_1.measurements_1[i]);
+        }
+        printf("\n");
+
+        commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
                 global_args_1.measurements_1);
 
+        printf("measurements: ");
         for (i = 0; i < NUM_OF_SENSORS; i++) {
             printf("%d\t", global_args_1.measurements_1[i]);
         }
@@ -589,9 +599,7 @@ int main (int argc, char **argv)
             commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
                 global_args_1.currents);
 
-            for (i = 0; i < 1; i++) {
-                printf("Current %d: %d\n", (i + 1), global_args_1.currents[i]);
-            }
+            printf("Current 1: %d\t Current 2: %d\n", global_args_1.currents[0], global_args_1.currents[1]);
             usleep(100000);
         }
     }

@@ -2,25 +2,35 @@
 COMPILER = gcc
 
 # flags
-CFLAGS = -c -Wall 
+CFLAGS = -c -Wall
+LMFLAGS = -lm
 # PFLAGS = -framework Phidget21 -I /Library/Frameworks/Phidget21.framework/Headers
 
-all:qbmove qbmoveadmin qbinit qbtest qb_pos_stiff_demo
+# files
+#SOURCES = qbmove.c qbmoveadmin.c qbinit.c qbtest.c qb_pos_stiff_demo.c qbbackup.c
+
+
+all:qbmove qbmoveadmin qbinit qbtest qb_pos_stiff_demo qbbackup
+
     
 qbmove:objs/qbmove.o objs/qbmove_communications.o bin
-	$(COMPILER) $(PFLAGS) objs/qbmove.o objs/qbmove_communications.o -o bin/qbmove
+	$(COMPILER) $(PFLAGS) objs/qbmove.o objs/qbmove_communications.o -o bin/qbmove $(LMFLAGS)
 
 qbmoveadmin:objs/qbmoveadmin.o objs/qbmove_communications.o bin
-	$(COMPILER) objs/qbmoveadmin.o objs/qbmove_communications.o -o bin/qbmoveadmin
+	$(COMPILER) objs/qbmoveadmin.o objs/qbmove_communications.o -o bin/qbmoveadmin $(LMFLAGS)
 
 qbinit:objs/qbinit.o objs/qbmove_communications.o bin
-	$(COMPILER) objs/qbinit.o objs/qbmove_communications.o -o bin/qbinit
+	$(COMPILER) objs/qbinit.o objs/qbmove_communications.o -o bin/qbinit $(LMFLAGS)
 
 qbtest:objs/qbtest.o objs/qbmove_communications.o bin
-	$(COMPILER) objs/qbtest.o objs/qbmove_communications.o -o bin/qbtest
+	$(COMPILER) objs/qbtest.o objs/qbmove_communications.o -o bin/qbtest $(LMFLAGS)
 
 qb_pos_stiff_demo:objs/qb_pos_stiff_demo.o objs/qbmove_communications.o bin
-	$(COMPILER) objs/qb_pos_stiff_demo.o objs/qbmove_communications.o -o bin/qb_pos_stiff_demo
+	$(COMPILER) objs/qb_pos_stiff_demo.o objs/qbmove_communications.o -o bin/qb_pos_stiff_demo $(LMFLAGS)
+
+qbbackup:objs/qbbackup.o objs/qbmove_communications.o bin
+	$(COMPILER) objs/qbbackup.o objs/qbmove_communications.o -o bin/qbbackup $(LMFLAGS)
+
 
 objs/qbmove.o:qbmove.c objs
 	$(COMPILER) $(CFLAGS) $(PFLAGS) qbmove.c -o objs/qbmove.o 
@@ -39,6 +49,9 @@ objs/qbtest.o:qbtest.c objs
 
 objs/qb_pos_stiff_demo.o:qb_pos_stiff_demo.c objs
 	$(COMPILER) $(CFLAGS) qb_pos_stiff_demo.c -o objs/qb_pos_stiff_demo.o
+
+objs/qbbackup.o:qbbackup.c objs
+	$(COMPILER) $(CFLAGS) qbbackup.c -o objs/qbbackup.o
 
 clean:
 	rm -rf *.o bin objs

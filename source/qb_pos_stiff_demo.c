@@ -30,9 +30,7 @@ comm_settings comm_settings_t;
 
 int main(int argc, char **argv){
 	char port[255];
-	device_id = DEFAULT_ID;
-
-	printf("%f\n", 10 / DEG_TICK_MULTIPLIER);
+	device_id = BROADCAST_ID;
 
 	assert(port_selection(port));
 
@@ -175,13 +173,18 @@ int pilot_pos_stiff(){
 		}
 
 		set_pos_stiff(&pos, &stiff);
-		printf("Pos: %d, Stiff %d     \r", (int)(pos/DEG_TICK_MULTIPLIER), (int)(stiff/DEG_TICK_MULTIPLIER));
+		printf("Pos: %d, Stiff %d\t\t", (int)(pos/DEG_TICK_MULTIPLIER), (int)(stiff/DEG_TICK_MULTIPLIER));
+		printf("Pos (ticks): %d, Stiff(ticks): %d        \r", (int)pos, (int)stiff );
 		//commSetInputs(&comm_settings_t, device_id, current_ref);
 	}
 
 	pos = 0;
 	stiff = 0;
 	set_pos_stiff(&pos, &stiff);
+	usleep(500000);
+
+	// Deactivate motors
+    commActivate(&comm_settings_t, device_id, 0);
 
 	// Restore the old tty settings
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);

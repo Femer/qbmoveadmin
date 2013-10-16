@@ -42,7 +42,7 @@ int cycle();
 //==================================================================     globals
 
 comm_settings comm_settings_t;
-int device_id = DEFAULT_ID;
+int device_id = BROADCAST_ID;
 
 //==============================================================================
 //																			main
