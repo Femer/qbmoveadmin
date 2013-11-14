@@ -5,7 +5,10 @@
 
 #include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+
+#include <signal.h>
 
 //==================================================================     defines
 
@@ -15,7 +18,7 @@
 #define SUP_LIMIT DEFAULT_SUP_LIMIT / (DEFAULT_RESOLUTION * 2)
 #define DELAY 1500000	//in microseconds
 #define LITTLE_DELAY 5000 //in microseconds
-#define PAUSE 60 //in seconds
+#define PAUSE 30 //in seconds
 
 
 //===============================================================     structures
@@ -38,6 +41,7 @@ struct global_var {
 void print_usage();
 int open_port();
 int cycle();
+void int_handler(int sig);
 
 //==================================================================     globals
 
@@ -82,10 +86,13 @@ int main(int argc, char **argv){
     }
 
     if (gv.flag_set_repetitions) {
-    	while(repetitions--) {
-    		if (repetitions % BATCH_CYCLES) {
+    	while(repetitions) {
+    		if ((repetitions % BATCH_CYCLES) == 0) {
+    			printf("Having a pause :)\n");
     			sleep(PAUSE);
     		}
+    		repetitions--;
+    		printf("Remaining cycles: %d\n", repetitions);
     		cycle();
     	}
     }
@@ -123,6 +130,9 @@ int open_port() {
 int cycle() {
 	static int i, j;
 	short int inputs[NUM_OF_MOTORS];
+
+	// CTRL-C handler
+    signal(SIGINT, int_handler);
 
 	// Activate motors
     commActivate(&comm_settings_t, device_id, 1);
@@ -205,6 +215,22 @@ int cycle() {
     commActivate(&comm_settings_t, device_id, 0);
 
 	return 1;
+}
+
+void int_handler(int sig) {
+	printf("Entrato l'handler\n");
+	short int inputs[NUM_OF_MOTORS];
+
+	inputs[0] = 0;
+	inputs[1] = 0;
+
+	commSetInputs(&comm_settings_t, device_id, inputs);
+
+	usleep(2000000);
+
+	commActivate(&comm_settings_t, device_id, 0);
+
+	exit(0);
 }
 
 void print_usage() {

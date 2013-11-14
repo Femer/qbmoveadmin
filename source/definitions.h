@@ -8,7 +8,9 @@
 #define DEFAULT_INF_LIMIT -30000
 #define DEFAULT_SUP_LIMIT 30000
 #define BROADCAST_ID 0
-#define DEFAULT_PROPORTIONAL_GAIN 0.1
+#define DEFAULT_PID_P 0.1
+#define DEFAULT_PID_I 0
+#define DEFAULT_PID_D 0.7
 #define DEFAULT_INCREMENT 1 //in degree
 #define DEFAULT_STIFFNESS 30 //in degree
 #define DEFAULT_MAX_EXCURSION 330 //in degree

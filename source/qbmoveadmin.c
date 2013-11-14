@@ -63,7 +63,7 @@ static const struct option longOpts[] = {
     // { "set_inputs", required_argument, NULL, 's' },
     { "get_measurements", required_argument, NULL, 'g' },
     { "id", required_argument, NULL, 'i' },
-    { "control_k", required_argument, NULL, 'k' },
+    { "PID_control_parameters", no_argument, NULL, 'k' },
     { "activate_on_startup", required_argument, NULL, 'a' },
     { "deactivate_on_startup", required_argument, NULL, 'd' },
     { "resolution", no_argument, NULL, 's' },
@@ -83,14 +83,14 @@ static const struct option longOpts[] = {
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "g:i:k:admsu:o:f:z:prltvhqw:?";
+static const char *optString = "g:i:kadmsu:o:f:z:prltvhqw:?";
 
 struct structglobal_args {
     int device_id;
     // int flag_set_inputs;     /* -s option */
     int flag_get_measurements;  /* -g option */
     int flag_id;                /* -i option */
-    int flag_control_k;         /* -k option */
+    int flag_pid_control;         /* -k option */
     int flag_activation;        /* -a option */
     int flag_deactivation;      /* -d option */    
     int flag_pos_resolution;    /* -s option */    
@@ -114,7 +114,7 @@ struct structglobal_args {
     short int               measurement_offset[NUM_OF_SENSORS];
     float                   measurement_multiplier[NUM_OF_SENSORS];
     float                   meas_multiplier;    
-    float                   control_k;
+    float                   pid_control[3];
     float                   filter;
     float                   deadzone;
     unsigned char           startup_activation;
@@ -154,7 +154,7 @@ int main (int argc, char **argv)
 
     global_args.device_id           = 0;
     global_args.flag_id             = 0;
-    global_args.flag_control_k      = 0;
+    global_args.flag_pid_control      = 0;
     global_args.flag_activation     = 0;
     global_args.flag_deactivation   = 0;
     global_args.flag_input_mode     = 0;
@@ -181,8 +181,16 @@ int main (int argc, char **argv)
             global_args.flag_id = 1;
             break;
         case 'k':
-            sscanf(optarg,"%f",&global_args.control_k);
-            global_args.flag_control_k = 1;
+            printf("Set the new values for the PID controller:\nK_p: ");
+            scanf("%f", global_args.pid_control);
+            printf("K_i: ");
+            scanf("%f", global_args.pid_control + 1);
+            printf("K_d: ");
+            scanf("%f", global_args.pid_control + 2);
+
+            printf("PID parameters: %f, %f, %f\n", global_args.pid_control[0], global_args.pid_control[1], global_args.pid_control[2]);
+
+            global_args.flag_pid_control = 1;
             break;
         case 'a':
             global_args.flag_activation = 1;
@@ -426,16 +434,22 @@ int main (int argc, char **argv)
          return 0;
     }
     
-//==============================================     setting parameter control_k
+//==================================================     setting PID parameter
     
     
-    if(global_args.flag_control_k)
+    if(global_args.flag_pid_control)
     {
-        if(global_args.flag_verbose)
-            printf("Changing control constant to %f.\n", global_args.control_k);
+        if(global_args.flag_verbose) {
+            printf("Changing PID control constant to:\n");
+            printf("P: %f\n", global_args.pid_control[0]);
+            printf("I: %f\n", global_args.pid_control[1]);
+            printf("D: %f\n", global_args.pid_control[2]);
+        }
+        //da correggere
 
         commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_CONTROL_K, &global_args.control_k, 1);
+            PARAM_PID_CONTROL, global_args.pid_control, 3);
+        usleep(100000);
         commStoreParams(&comm_settings_t, global_args.device_id);
         
         if(global_args.flag_verbose)
@@ -653,7 +667,7 @@ void display_usage( void )
     puts("Options:");
     puts("");
     puts(" -i, --id <new id>                    Change device's id.");
-    puts(" -k, --control_k <control k>          Set control constant.");
+    puts(" -k, --PID_control_parameters         Set PID control constants.");
     puts(" -m, --input_mode                     Set input mode.");
     puts(" -a, --activate_on_startup            Set motors active on startup.");
     puts(" -d, --deactivate_on_startup          Set motors off on startup.");
@@ -669,6 +683,9 @@ void display_usage( void )
     puts(" -p, --ping                           Get info on the device.");
     puts(" -l, --list_devices                   List devices connected.");
     puts(" -t, --serial_port                    Set up serial port.");
+    puts(" -q, --set_limit                      Set up limits for motor maximum range");
+    puts(" -w, --activate_limit                 Set or reset limits position");
+    puts("");
     puts(" -v, --verbose                        Verbose mode.");
     puts(" -h, --help                           Shows this information.");
     puts("------------------------------------------------------------------------------------------"); 
@@ -688,6 +705,7 @@ void display_usage( void )
     puts("  qbmoveadmin 65 -f 0.1               Sets measurement filter to 0.1.");
     puts("  qbmoveadmin 65 -z 0                 Sets position controller deadzone none.");
     puts("  qbmoveadmin 65 -r                   Restore factory parameters.");
+    puts("  qbmoveadmin 65 -w [1 or 0]          Set or reset position limit");
     puts("==========================================================================================");
     /* ... */
     exit( EXIT_FAILURE );

@@ -1,3 +1,11 @@
 source/bin
 source/objs
 qbmove.conf
+qb_backup
+qb_backup.zip
+source.zip
+source/codice_gio.c
+source/prova.csv
+source/prova_log.csv
+source/test.csv
+source/test_log.csv

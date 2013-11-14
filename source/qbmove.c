@@ -54,10 +54,11 @@ static const struct option longOpts[] = {
     { "set_zeros", no_argument, NULL, 'z'},
     { "use_gen_sin", no_argument, NULL, 'k'},
     { "get_currents", no_argument, NULL, 'c'},
+    { "bootloader_mode", no_argument, NULL, 'b'},
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "s:adgptvh?f:lwzkc";
+static const char *optString = "s:adgptvh?f:lwzkcb";
 
 struct global_args {
     int device_id_1, device_id_2;
@@ -74,6 +75,7 @@ struct global_args {
     int flag_set_zeros;             /* -z option */
     int flag_use_gen_sin;           /* -k option */
     int flag_get_currents;          /* -c option */
+    int flag_bootloader_mode;       /* -b option */
 
 
     short int inputs[NUM_OF_MOTORS];
@@ -270,6 +272,7 @@ int main (int argc, char **argv)
     global_args_1.flag_test				  = 0;
     global_args_1.flag_set_zeros          = 0;
     global_args_1.flag_use_gen_sin        = 0;
+    global_args_1.flag_bootloader_mode    = 0;
 
     global_args_2.device_id_1             = 0;
     global_args_2.device_id_2             = 0;
@@ -285,6 +288,7 @@ int main (int argc, char **argv)
     global_args_2.flag_test               = 0;
     global_args_2.flag_set_zeros          = 0;
     global_args_2.flag_use_gen_sin        = 0;
+    global_args_2.flag_bootloader_mode    = 0;
     
     //===================================================     processing options
 
@@ -334,6 +338,9 @@ int main (int argc, char **argv)
             	break;
             case 'c':
                 global_args_1.flag_get_currents = 1;
+                break;
+            case 'b':
+                global_args_1.flag_bootloader_mode = 1;
                 break;
             case 'h':
             case '?':
@@ -568,17 +575,17 @@ int main (int argc, char **argv)
 
     if(global_args_1.flag_get_measurements)
     {
-        if(global_args_1.flag_verbose)
-            puts("Getting measurements.");
+        // if(global_args_1.flag_verbose)
+        //     puts("Getting measurements.");
       
-        commGetParam(&comm_settings_1, global_args_1.device_id_1,
-                PARAM_MEASUREMENT_OFFSET, global_args_1.measurements_1,3);
+        // commGetParam(&comm_settings_1, global_args_1.device_id_1,
+        //         PARAM_MEASUREMENT_OFFSET, global_args_1.measurements_1,3);
 
-		printf("Offsets: ");
-        for (i = 0; i < NUM_OF_SENSORS; i++) {
-            printf("%d\t", global_args_1.measurements_1[i]);
-        }
-        printf("\n");
+		// printf("Offsets: ");
+  //       for (i = 0; i < NUM_OF_SENSORS; i++) {
+  //           printf("%d\t", global_args_1.measurements_1[i]);
+  //       }
+  //       printf("\n");
 
         commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
                 global_args_1.measurements_1);
@@ -588,7 +595,15 @@ int main (int argc, char **argv)
             printf("%d\t", global_args_1.measurements_1[i]);
         }
         printf("\n");
+        
     }
+
+    if(global_args_1.flag_bootloader_mode) {
+        printf("Entering bootloader mode\n");
+        commBootloader(&comm_settings_1, global_args_1.device_id_1);
+        printf("DONE\n");
+    }
+    
 //==========================================================     get_currents
 
     if(global_args_1.flag_get_currents) {
@@ -724,7 +739,7 @@ int main (int argc, char **argv)
             
             // update inputs
             global_args_1.inputs[0] = (cos(angle_1)*amplitude_1 + bias_1)*correction_factor[0];
-            global_args_1.inputs[1] = (cos(angle_2)*amplitude_2 + bias_2)*correction_factor[1];
+            global_args_1.inputs[1] = (cos(angle_2 + phase_shift)*amplitude_2 + bias_2)*correction_factor[1];
                 
             // set new inputs
             commSetInputs(&comm_settings_1, global_args_1.device_id_1, global_args_1.inputs);
@@ -821,8 +836,9 @@ int main (int argc, char **argv)
                 error_counter++;
             }
 
-            commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.currents);
+            // update currents
+            // commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
+            //     global_args_1.currents);
 
             for (k = 0; k < NUM_OF_SENSORS; k++) {
                 measurements[k] = global_args_1.measurements_1[k]/correction_factor[k];
@@ -961,7 +977,7 @@ int main (int argc, char **argv)
 float** file_parser( char* filename, int* deltat, int* num_values )
 {
     FILE* filep;
-    float** array;
+    float** array = NULL;
     int i;
     filep = fopen(filename, "r");
     if (filep == NULL) perror ("Error opening file");

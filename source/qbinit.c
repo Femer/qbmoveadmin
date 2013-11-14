@@ -215,26 +215,35 @@ int set_resolution(int res) {
 }
 
 int set_proportional_gain() {
-	float control_k = DEFAULT_PROPORTIONAL_GAIN;
-	float aux;
-	printf("Setting proportional gain...");
+	float pid_control[3];
+	float aux[3];
 	fflush(stdout);
+
+	pid_control[0] = DEFAULT_PID_P;
+	pid_control[1] = DEFAULT_PID_I;
+	pid_control[2] = DEFAULT_PID_D;
+
+	printf("Setting PID parameters: %f, %f, %f",
+			pid_control[0], pid_control[1], pid_control[2]);
 
 	while(1) {
 		//set
 		commSetParam(&comm_settings_t, device_id,
-	            PARAM_CONTROL_K, &control_k, 1);
+	            PARAM_PID_CONTROL, pid_control, 3);
 		usleep(100000);
 	    commStoreParams(&comm_settings_t, device_id);
 	    usleep(1000000);
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id,
-	    		PARAM_CONTROL_K, &aux, 1)) {
+	    		PARAM_PID_CONTROL, aux, 3)) {
 	    	usleep(500000);
 	    }
 
-	    if ((aux < control_k + 0.0001) || (aux > control_k - 0.0001))
+	    printf("Retrieved values: %f, %f, %f\n", aux[0], aux[1], aux[2]);
+
+
+	    if ((aux[0] < pid_control[0] + 0.0001) || (aux[0] > pid_control[0] - 0.0001))
 	    	break;
 	}
 
