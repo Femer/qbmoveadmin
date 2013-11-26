@@ -54,14 +54,14 @@ static const struct option longOpts[] = {
     { "set_zeros", no_argument, NULL, 'z'},
     { "use_gen_sin", no_argument, NULL, 'k'},
     { "get_currents", no_argument, NULL, 'c'},
-    { "bootloader_mode", no_argument, NULL, 'b'},
+    { "bootloader", no_argument, NULL, 'b'},
     { NULL, no_argument, NULL, 0 }
 };
 
 static const char *optString = "s:adgptvh?f:lwzkcb";
 
 struct global_args {
-    int device_id_1, device_id_2;
+    int device_id;
     int flag_set_inputs;            /* -s option */
     int flag_get_measurements;      /* -g option */
     int flag_activate;              /* -a option */
@@ -79,15 +79,14 @@ struct global_args {
 
 
     short int inputs[NUM_OF_MOTORS];
-    short int measurements_1[NUM_OF_SENSORS];  //board 1 daisy chain
-	short int measurements_2[NUM_OF_SENSORS];  //board 2 daisy chain
+    short int measurements[NUM_OF_SENSORS];
     short int measurement_offset[NUM_OF_SENSORS];
     short int currents[NUM_OF_MOTORS];
     char filename[255];
     char log_file[255];
     
     FILE* log_file_fd;
-} global_args_1, global_args_2;  //multiple boards on multiple usb
+} global_args;  //multiple boards on multiple usb
 
 struct position {
     float prec;
@@ -110,11 +109,11 @@ float gear_ratio[NUM_OF_MOTORS];            // motor gear ratio
 uint8_t resolution[NUM_OF_SENSORS];         // sensors resolution set on the board
 float correction_factor[NUM_OF_SENSORS];    // correction factor calculated
                                             //   using resolution and gear ratio
-float measurements[NUM_OF_SENSORS];         //measurements
+float glob_measurements[NUM_OF_SENSORS];         //measurements
 
 int ret;                                    //utility variable to store return values
 
-comm_settings comm_settings_1, comm_settings_2;
+comm_settings comm_settings_1;
     
 
 
@@ -246,49 +245,30 @@ int main (int argc, char **argv)
     int  num_ports = 0;     // variables for COMM config
     char ports[10][255];      
     int  aux_int;
-    char port_1[255];
-    char port_2[255];
-    int port_2_enabled = 0;
+    char port[255];
     
     char aux_string[10000]; // used to store PING reply
-    int aux[3];             // used to store input during set_inputs
+    int  aux[3];             // used to store input during set_inputs
 
-    int option;             // used for processing options
-    int longIndex = 0;
+    int  option;             // used for processing options
+    int  longIndex = 0;
 
     // initializations
 
-    global_args_1.device_id_1             = 0;
-    global_args_1.device_id_2             = 0;
-    global_args_1.flag_serial_port        = 0;
-    global_args_1.flag_ping               = 0;
-    global_args_1.flag_verbose            = 0;
-    global_args_1.flag_activate           = 0;
-    global_args_1.flag_deactivate         = 0;
-    global_args_1.flag_get_measurements   = 0;
-    global_args_1.flag_set_inputs         = 0;
-    global_args_1.flag_file               = 0;
-    global_args_1.flag_log                = 0;
-    global_args_1.flag_test				  = 0;
-    global_args_1.flag_set_zeros          = 0;
-    global_args_1.flag_use_gen_sin        = 0;
-    global_args_1.flag_bootloader_mode    = 0;
-
-    global_args_2.device_id_1             = 0;
-    global_args_2.device_id_2             = 0;
-    global_args_2.flag_serial_port        = 0;
-    global_args_2.flag_ping               = 0;
-    global_args_2.flag_verbose            = 0;
-    global_args_2.flag_activate           = 0;
-    global_args_2.flag_deactivate         = 0;
-    global_args_2.flag_get_measurements   = 0;
-    global_args_2.flag_set_inputs         = 0;
-    global_args_2.flag_file               = 0;
-    global_args_2.flag_log                = 0;
-    global_args_2.flag_test               = 0;
-    global_args_2.flag_set_zeros          = 0;
-    global_args_2.flag_use_gen_sin        = 0;
-    global_args_2.flag_bootloader_mode    = 0;
+    global_args.device_id               = 0;
+    global_args.flag_serial_port        = 0;
+    global_args.flag_ping               = 0;
+    global_args.flag_verbose            = 0;
+    global_args.flag_activate           = 0;
+    global_args.flag_deactivate         = 0;
+    global_args.flag_get_measurements   = 0;
+    global_args.flag_set_inputs         = 0;
+    global_args.flag_file               = 0;
+    global_args.flag_log                = 0;
+    global_args.flag_test				  = 0;
+    global_args.flag_set_zeros          = 0;
+    global_args.flag_use_gen_sin        = 0;
+    global_args.flag_bootloader_mode    = 0;
     
     //===================================================     processing options
 
@@ -298,49 +278,49 @@ int main (int argc, char **argv)
         {
             case 's':
                 sscanf(optarg,"%d,%d",&aux[0],&aux[1]);
-                global_args_1.inputs[0] = (short int) aux[0];
-                global_args_1.inputs[1] = (short int) aux[1];
-                global_args_1.flag_set_inputs = 1;
+                global_args.inputs[0] = (short int) aux[0];
+                global_args.inputs[1] = (short int) aux[1];
+                global_args.flag_set_inputs = 1;
                 break;
             case 'g':
-                global_args_1.flag_get_measurements = 1;
+                global_args.flag_get_measurements = 1;
                 break;
             case 'a':
-                global_args_1.flag_activate = 1;
+                global_args.flag_activate = 1;
                 break;
             case 'd':
-                global_args_1.flag_deactivate = 1;
+                global_args.flag_deactivate = 1;
                 break;
             case 't':
-                global_args_1.flag_serial_port = 1;
+                global_args.flag_serial_port = 1;
                 break;
             case 'p':
-                global_args_1.flag_ping = 1;
+                global_args.flag_ping = 1;
                 break;
             case 'v':
-                global_args_1.flag_verbose = 1;
+                global_args.flag_verbose = 1;
                 break;
             case 'f':
-                sscanf(optarg, "%s", global_args_1.filename);        
-                global_args_1.flag_file = 1;
+                sscanf(optarg, "%s", global_args.filename);        
+                global_args.flag_file = 1;
                 break;
             case 'l':
-                global_args_1.flag_log = 1;
+                global_args.flag_log = 1;
                 break;
             case 'k':
-                global_args_1.flag_use_gen_sin = 1;
+                global_args.flag_use_gen_sin = 1;
                 break;
             case 'z':
-                global_args_1.flag_set_zeros = 1;
+                global_args.flag_set_zeros = 1;
                 break;
             case 'w':
-            	global_args_1.flag_test = 1;
+            	global_args.flag_test = 1;
             	break;
             case 'c':
-                global_args_1.flag_get_currents = 1;
+                global_args.flag_get_currents = 1;
                 break;
             case 'b':
-                global_args_1.flag_bootloader_mode = 1;
+                global_args.flag_bootloader_mode = 1;
                 break;
             case 'h':
             case '?':
@@ -351,7 +331,7 @@ int main (int argc, char **argv)
         }
     }
 
-    if((optind == 1) | (global_args_1.flag_verbose & (optind == 2)))
+    if((optind == 1) | (global_args.flag_verbose & (optind == 2)))
     {
         display_usage();    
         return 0;
@@ -359,7 +339,7 @@ int main (int argc, char **argv)
 
     //==================================================     setting serial port
 
-    if(global_args_1.flag_serial_port)
+    if(global_args.flag_serial_port)
     {
 
         num_ports = RS485listPorts(ports);
@@ -385,11 +365,9 @@ int main (int argc, char **argv)
         } else {
             puts("No serial port available.");
 		}
-	    port_2_enabled = 0;
 
 		if (num_ports - 1 > 0)
 		{
-			port_2_enabled = 1;
 			puts("\nChoose serial port 2:\n");
 			for(i = 0; i < num_ports; ++i)
 			{
@@ -408,9 +386,7 @@ int main (int argc, char **argv)
 			if (file == NULL) {
 				printf("Cannot open qbmove.conf\n");
 			}
-			fprintf(file,"serialport1 %s\n",ports[tmp-1]);
-			fprintf(file,"port_2_enabled %d\n", port_2_enabled);
-			fprintf(file,"serialport2 %s\n",ports[aux_int-1]);
+			fprintf(file,"serialport %s\n",ports[tmp-1]);
 			fclose(file);                    
 		} else {
 			puts("Choice not available");
@@ -421,20 +397,18 @@ int main (int argc, char **argv)
 
     //==========================================     reading configuration files
 
-    if(global_args_1.flag_verbose)
+    if(global_args.flag_verbose)
         puts("Reading configuration files.");
 
     file = fopen(QBMOVE_FILE, "r");
 
-    fscanf(file, "serialport1 %s\n", port_1);
-    fscanf(file, "port_2_enabled %d\n", &port_2_enabled);
-    fscanf(file, "serialport2 %s\n", port_2);
+    fscanf(file, "serialport %s\n", port);
 
     fclose(file);
 
 
-    if(global_args_1.flag_verbose)
-        printf("Port 1 %s\nPort 2 %s\n", port_1, port_2);
+    if(global_args.flag_verbose)
+        printf("Port: %s\n", port);
 
 
     file = fopen(MOTOR_FILE, "r");
@@ -446,7 +420,7 @@ int main (int argc, char **argv)
 
     
 
-    if(global_args_1.flag_verbose)
+    if(global_args.flag_verbose)
         printf("Gear ratio 1: %f\nGear ratio 2: %f\n",
             gear_ratio[0], gear_ratio[1]);
 
@@ -455,45 +429,29 @@ int main (int argc, char **argv)
 
 #ifndef TEST_MODE
 
-    if(global_args_1.flag_verbose)
+    if(global_args.flag_verbose)
         puts("Connecting to serial port.");    
 
-    openRS485(&comm_settings_1, port_1);
+    openRS485(&comm_settings_1, port);
 
     if(comm_settings_1.file_handle == INVALID_HANDLE_VALUE)
     {
         puts("Couldn't connect to the serial port 1.");
 
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
             puts("Closing the application.");        
 
         return 0;
     } else {
-    	if(global_args_1.flag_verbose)
+    	if(global_args.flag_verbose)
     		puts("Serial port 1 connected");        
     }
-    
-    if (port_2_enabled) {
-    	openRS485(&comm_settings_2, port_2);
-		if(comm_settings_2.file_handle == INVALID_HANDLE_VALUE)
-		{
-			puts("Couldn't connect to the serial port 2.");
-
-			if(global_args_1.flag_verbose)
-				puts("Closing the application.");        
-
-			return 0;
-		} else {
-			if(global_args_1.flag_verbose)
-				puts("Serial port 2 connected");
-		}
-	}
 
 
     //==========================================     calculate correction factor
 
     // retrieve current resolution
-    // while(commGetParam(&comm_settings_1, global_args_1.device_id_1,
+    // while(commGetParam(&comm_settings_1, global_args.device_id,
     //     PARAM_POS_RESOLUTION, resolution, NUM_OF_SENSORS) != 0) {}
 
     resolution[0] = 1;
@@ -506,7 +464,7 @@ int main (int argc, char **argv)
     // calculate correction factor for every sensors
     for (i = 0; i < NUM_OF_SENSORS; i++) {
         correction_factor[i] = 65536.0/(360 << resolution[i]);
-        if (global_args_1.flag_verbose) {
+        if (global_args.flag_verbose) {
             printf("Corr fact %d: %f\n", i, correction_factor[i]);
         }
     }
@@ -521,11 +479,11 @@ int main (int argc, char **argv)
 
     if (argc - optind == 1)
     {
-        sscanf(argv[optind++],"%d",&global_args_1.device_id_1);
-        if(global_args_1.flag_verbose)
-            printf("Device ID:%d\n", global_args_1.device_id_1);
+        sscanf(argv[optind++],"%d",&global_args.device_id);
+        if(global_args.flag_verbose)
+            printf("Device ID:%d\n", global_args.device_id);
     }
-    else if(global_args_1.flag_verbose)
+    else if(global_args.flag_verbose)
         puts("No device ID was chosen. Running in broadcasting mode.");
 
 #endif
@@ -533,26 +491,24 @@ int main (int argc, char **argv)
     //=================================================================     ping
 
     // If ping... then DOESN'T PROCESS OTHER COMMANDS
-    if(global_args_1.flag_ping)
+
+    if(global_args.flag_ping)
     {
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
             puts("Pinging serial port.");        
 
-        if(global_args_1.device_id_1) {
-            commGetInfo(&comm_settings_1, global_args_1.device_id_1, INFO_ALL, aux_string);            
+        if(global_args.device_id) {
+            commGetInfo(&comm_settings_1, global_args.device_id, INFO_ALL, aux_string);            
         } else {
             RS485GetInfo(&comm_settings_1,  aux_string);
+            printf("len of aux_String: %d\n", (int)strlen(aux_string));
             puts(aux_string);
-            if (port_2_enabled) {
-                RS485GetInfo(&comm_settings_2,  aux_string);
-                puts(aux_string);
-            }
         }
        
 
         //puts(aux_string);
 
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
             puts("Closing the application.");        
 
         return 0;
@@ -560,61 +516,70 @@ int main (int argc, char **argv)
 
     //===========================================================     set inputs
 
-    if(global_args_1.flag_set_inputs)
+    if(global_args.flag_set_inputs)
     {
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
             printf("Setting inputs to %d and %d.\n",
-                    global_args_1.inputs[0], global_args_1.inputs[1]);
+                    global_args.inputs[0], global_args.inputs[1]);
 
-        commSetInputs(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.inputs);
+        commSetInputs(&comm_settings_1, global_args.device_id,
+                global_args.inputs);
 
     }
 
 //=====================================================     get measurements
 
-    if(global_args_1.flag_get_measurements)
+    if(global_args.flag_get_measurements)
     {
-        // if(global_args_1.flag_verbose)
+
+        short int my_values[2 + NUM_OF_SENSORS];
+
+        commGetCurrAndMeas(&comm_settings_1, global_args.device_id,
+                my_values);
+
+        printf("currents: %d, %d\n", my_values[0], my_values[1]);
+        printf("meas: %d %d %d\n", my_values[2], my_values[3], my_values[4]);
+        
+        // if(global_args.flag_verbose)
         //     puts("Getting measurements.");
       
-        // commGetParam(&comm_settings_1, global_args_1.device_id_1,
-        //         PARAM_MEASUREMENT_OFFSET, global_args_1.measurements_1,3);
+        // commGetParam(&comm_settings_1, global_args.device_id,
+        //         PARAM_MEASUREMENT_OFFSET, global_args.measurements,3);
 
 		// printf("Offsets: ");
   //       for (i = 0; i < NUM_OF_SENSORS; i++) {
-  //           printf("%d\t", global_args_1.measurements_1[i]);
+  //           printf("%d\t", global_args.measurements[i]);
   //       }
   //       printf("\n");
 
-        commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.measurements_1);
+        // commGetMeasurements(&comm_settings_1, global_args.device_id,
+        //         global_args.measurements);
 
-        printf("measurements: ");
-        for (i = 0; i < NUM_OF_SENSORS; i++) {
-            printf("%d\t", global_args_1.measurements_1[i]);
-        }
-        printf("\n");
+        // printf("measurements: ");
+        // for (i = 0; i < NUM_OF_SENSORS; i++) {
+        //     printf("%d\t", global_args.measurements[i]);
+        // }
+        // printf("\n");
         
     }
 
-    if(global_args_1.flag_bootloader_mode) {
+    if(global_args.flag_bootloader_mode) {
         printf("Entering bootloader mode\n");
-        commBootloader(&comm_settings_1, global_args_1.device_id_1);
+        commBootloader(&comm_settings_1, global_args.device_id);
         printf("DONE\n");
     }
     
 //==========================================================     get_currents
 
-    if(global_args_1.flag_get_currents) {
-        if(global_args_1.flag_verbose)
+    if(global_args.flag_get_currents) {
+        if(global_args.flag_verbose)
             puts("Getting currents.");
 
         while(1) {
-            commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.currents);
+            commGetCurrents(&comm_settings_1, global_args.device_id,
+                global_args.currents);
 
-            printf("Current 1: %d\t Current 2: %d\n", global_args_1.currents[0], global_args_1.currents[1]);
+            printf("Current 1: %d\t Current 2: %d\n", global_args.currents[0], global_args.currents[1]);
             usleep(100000);
         }
     }
@@ -622,25 +587,25 @@ int main (int argc, char **argv)
 
 //=================================================================     activate
     
-    if(global_args_1.flag_activate)
+    if(global_args.flag_activate)
     {
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
            puts("Turning QB Move on.\n");
-        commActivate(&comm_settings_1, global_args_1.device_id_1, 1);
+        commActivate(&comm_settings_1, global_args.device_id, 1);
     }
     
 //===============================================================     deactivate
 
-    if(global_args_1.flag_deactivate)
+    if(global_args.flag_deactivate)
     {
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
            puts("Turning QB Move off.\n");
-        commActivate(&comm_settings_1, global_args_1.device_id_1, 0);
+        commActivate(&comm_settings_1, global_args.device_id, 0);
     }    
 
 //==============================================================     use_gen_sin
 
-    if(global_args_1.flag_use_gen_sin)
+    if(global_args.flag_use_gen_sin)
     {
         //variable declaration
         float delta_t;                      // milliseconds between values
@@ -662,13 +627,18 @@ int main (int argc, char **argv)
         struct timezone foo;
 
         int error_counter = 0;
+
+        if(global_args.flag_log) {
+            strcpy(global_args.log_file, "sin_log.csv");
+            global_args.log_file_fd = fopen(global_args.log_file, "w");
+        }
         
 
         // CTRL-C handler
         signal(SIGINT, int_handler);
 
 
-        if(global_args_1.flag_verbose) {
+        if(global_args.flag_verbose) {
            puts("Generate sinusoidal inputs\n");
         }
 
@@ -714,7 +684,7 @@ int main (int argc, char **argv)
         printf("inc1 %f, inc2 %f\n", inc_1, inc_2); //XXX
 
         // activate motors
-        commActivate(&comm_settings_1, global_args_1.device_id_1, 1);
+        commActivate(&comm_settings_1, global_args.device_id, 1);
 
         // retrieve begin time
         gettimeofday(&begin, &foo);
@@ -729,24 +699,35 @@ int main (int argc, char **argv)
             }
 
             // update measurements
-            if (commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
-                    global_args_1.measurements_1)) {
+            if (commGetMeasurements(&comm_settings_1, global_args.device_id,
+                    global_args.measurements)) {
                 error_counter++;
             }
             for (k = 0; k < NUM_OF_SENSORS; k++) {
-                measurements[k] = global_args_1.measurements_1[k]/correction_factor[k];
+                glob_measurements[k] = global_args.measurements[k]/correction_factor[k];
             }
             
             // update inputs
-            global_args_1.inputs[0] = (cos(angle_1)*amplitude_1 + bias_1)*correction_factor[0];
-            global_args_1.inputs[1] = (cos(angle_2 + phase_shift)*amplitude_2 + bias_2)*correction_factor[1];
+            global_args.inputs[0] = (cos(angle_1)*amplitude_1 + bias_1)*correction_factor[0];
+            global_args.inputs[1] = (cos(angle_2 + phase_shift)*amplitude_2 + bias_2)*correction_factor[1];
                 
             // set new inputs
-            commSetInputs(&comm_settings_1, global_args_1.device_id_1, global_args_1.inputs);
+            commSetInputs(&comm_settings_1, global_args.device_id, global_args.inputs);
 
             // update angle position
             angle_1 += inc_1;
             angle_2 += inc_2;
+
+            //log file
+            if (global_args.flag_log) {
+                for (k = 0; k < NUM_OF_SENSORS; k++) {
+                    fprintf(global_args.log_file_fd, "%f,\t", glob_measurements[k]);
+                }
+                fprintf(global_args.log_file_fd, "%f,\t%f\n",
+                    (float)global_args.inputs[0]/correction_factor[0], (float)global_args.inputs[1]/correction_factor[1]);
+                // fprintf(global_args.log_file_fd, "%d,\t%d\n",
+                //     global_args.currents[0], global_args.currents[1]);
+            }
 
         }
 
@@ -754,10 +735,10 @@ int main (int argc, char **argv)
         gettimeofday(&end, &foo);
 
         // reset motor  position
-        global_args_1.inputs[0] = 0;
-        global_args_1.inputs[1] = 0;
-        commSetInputs(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.inputs);
+        global_args.inputs[0] = 0;
+        global_args.inputs[1] = 0;
+        commSetInputs(&comm_settings_1, global_args.device_id,
+                global_args.inputs);
 
         printf("total time (millisec): %f\n", timevaldiff(&begin, &end)/1000.0);
         printf("Error counter: %d\n", error_counter);
@@ -767,10 +748,11 @@ int main (int argc, char **argv)
 
 //===============================================================     input file
     
-    if(global_args_1.flag_file){
+    if(global_args.flag_file){
         // variable declaration
         struct timeval t_ref, t_act, begin, end;
         struct timezone foo;
+        short int retrieved_values[2 + NUM_OF_SENSORS];
         int deltat = 0; //time interval in millisecs
         int num_values = 0;
         float** array;
@@ -785,26 +767,26 @@ int main (int argc, char **argv)
 #endif
 
         // VERBOSE ONLY
-		if(global_args_1.flag_verbose) {
-            printf("Parsing file %s\n", global_args_1.filename);
+		if(global_args.flag_verbose) {
+            printf("Parsing file %s\n", global_args.filename);
         }
 
         // parsing file
-        array = file_parser(global_args_1.filename, &deltat, &num_values);
+        array = file_parser(global_args.filename, &deltat, &num_values);
 
         // VERBOSE ONLY
-        if(global_args_1.flag_verbose)
+        if(global_args.flag_verbose)
             printf("Sending %d values with Dt = %d\n", num_values, deltat);
 
         //if log enabled, open file for logging
-        if(global_args_1.flag_log) {
-            strcpy(filename, global_args_1.filename);
+        if(global_args.flag_log) {
+            strcpy(filename, global_args.filename);
             name = strtok(filename, ".");
             extension = strtok(NULL, ".");
-            strcpy(global_args_1.log_file, name);
-            strcat(global_args_1.log_file, "_log.");
-            strcat(global_args_1.log_file, extension);
-            global_args_1.log_file_fd = fopen(global_args_1.log_file, "w");
+            strcpy(global_args.log_file, name);
+            strcat(global_args.log_file, "_log.");
+            strcat(global_args.log_file, extension);
+            global_args.log_file_fd = fopen(global_args.log_file, "w");
         }
 
         //retrieve current time
@@ -814,12 +796,12 @@ int main (int argc, char **argv)
         signal(SIGINT, int_handler);
     
         // write first line of log file
-        if (global_args_1.flag_log) {
+        if (global_args.flag_log) {
             for (k = 0; k < NUM_OF_SENSORS; k++) {
-                    fprintf(global_args_1.log_file_fd, "sensor_%d,\t", (k + 1));
+                    fprintf(global_args.log_file_fd, "sensor_%d,\t", (k + 1));
                 }
-            fprintf(global_args_1.log_file_fd, "input_1,\tinput_2,\t");
-            fprintf(global_args_1.log_file_fd, "current_1,\tcurrent_2\n");
+            fprintf(global_args.log_file_fd, "input_1,\tinput_2,\t");
+            fprintf(global_args.log_file_fd, "current_1,\tcurrent_2\n");
         }
 
         for(i=0; i<num_values; i++) {     
@@ -831,36 +813,49 @@ int main (int argc, char **argv)
             }
 
             // update measurements
-            if (commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
-                    global_args_1.measurements_1)) {
+            if (commGetMeasurements(&comm_settings_1, global_args.device_id,
+                    global_args.measurements)) {
                 error_counter++;
             }
 
             // update currents
-            // commGetCurrents(&comm_settings_1, global_args_1.device_id_1,
-            //     global_args_1.currents);
+            // commGetCurrents(&comm_settings_1, global_args.device_id,
+            //     global_args.currents);
+
+
+            // commGetCurrAndMeas(&comm_settings_1, global_args.device_id,
+            //         retrieved_values);
+
+            // global_args.currents[0] = retrieved_values[0];
+            // global_args.currents[1] = retrieved_values[1];
+
+            // global_args.measurements[0] = retrieved_values[2];
+            // global_args.measurements[1] = retrieved_values[3];
+            // global_args.measurements[2] = retrieved_values[4];
+
+
 
             for (k = 0; k < NUM_OF_SENSORS; k++) {
-                measurements[k] = global_args_1.measurements_1[k]/correction_factor[k];
+                glob_measurements[k] = global_args.measurements[k]/correction_factor[k];
             }
             
             // update inputs
-            global_args_1.inputs[0] = array[0][i]*correction_factor[0];
-            global_args_1.inputs[1] = array[1][i]*correction_factor[1];
+            global_args.inputs[0] = array[0][i]*correction_factor[0];
+            global_args.inputs[1] = array[1][i]*correction_factor[1];
             
             // set new inputs
-            commSetInputs(&comm_settings_1, global_args_1.device_id_1,
-                    global_args_1.inputs);
+            commSetInputs(&comm_settings_1, global_args.device_id,
+                    global_args.inputs);
         
             // write measurements in log file
-            if (global_args_1.flag_log) {
+            if (global_args.flag_log) {
                 for (k = 0; k < NUM_OF_SENSORS; k++) {
-                    fprintf(global_args_1.log_file_fd, "%f,\t", measurements[k]);
+                    fprintf(global_args.log_file_fd, "%f,\t", glob_measurements[k]);
                 }
-                fprintf(global_args_1.log_file_fd, "%f,\t%f,\t",
+                fprintf(global_args.log_file_fd, "%f,\t%f,\t",
                     array[0][i], array[1][i]);
-                fprintf(global_args_1.log_file_fd, "%d,\t%d\n",
-                    global_args_1.currents[0], global_args_1.currents[1]);
+                fprintf(global_args.log_file_fd, "%d,\t%d\n",
+                    global_args.currents[0], global_args.currents[1]);
             }
         }
 
@@ -874,16 +869,16 @@ int main (int argc, char **argv)
         free(array);
 
         //if necessary close log file
-        if (global_args_1.flag_log) {
-            fclose(global_args_1.log_file_fd);
+        if (global_args.flag_log) {
+            fclose(global_args.log_file_fd);
         }
 
         //at the end, set motors to 0
         usleep(500000);
-        global_args_1.inputs[0] = 0;
-        global_args_1.inputs[1] = 0;
-        commSetInputs(&comm_settings_1, global_args_1.device_id_1,
-                global_args_1.inputs);
+        global_args.inputs[0] = 0;
+        global_args.inputs[1] = 0;
+        commSetInputs(&comm_settings_1, global_args.device_id,
+                global_args.inputs);
 
         printf("total time (usec): %d\n", (int)timevaldiff(&begin, &end));
         printf("Error counter %d\n", error_counter);
@@ -891,7 +886,7 @@ int main (int argc, char **argv)
     
     
     //===========================================================     test force
-    if(global_args_1.flag_test)
+    if(global_args.flag_test)
     {	
     	printf("Flag_test\n");
 
@@ -903,8 +898,8 @@ int main (int argc, char **argv)
     }   
 
 
-    //=================================================================   set zeros
-    if(global_args_1.flag_set_zeros)
+    //============================================================     set zeros
+    if(global_args.flag_set_zeros)
     {
         struct timeval t_prec, t_act;
         struct timezone foo;
@@ -915,15 +910,15 @@ int main (int argc, char **argv)
         getchar();
 
         // Deactivate device to avoid motor movements
-        commActivate(&comm_settings_1, global_args_1.device_id_1, 0);
+        commActivate(&comm_settings_1, global_args.device_id, 0);
 
         // Reset all the offsets
         for (i = 0; i < NUM_OF_SENSORS; i++) {
-            global_args_1.measurement_offset[i] = 0;    
+            global_args.measurement_offset[i] = 0;    
         }
 
-        commSetParam(&comm_settings_1, global_args_1.device_id_1,
-            PARAM_MEASUREMENT_OFFSET, global_args_1.measurement_offset,
+        commSetParam(&comm_settings_1, global_args.device_id,
+            PARAM_MEASUREMENT_OFFSET, global_args.measurement_offset,
             NUM_OF_SENSORS);
 
 
@@ -937,10 +932,10 @@ int main (int argc, char **argv)
                     break;
                 }
             }
-            commGetMeasurements(&comm_settings_1, global_args_1.device_id_1,
-                    global_args_1.measurements_1);
+            commGetMeasurements(&comm_settings_1, global_args.device_id,
+                    global_args.measurements);
             for (i = 0; i < NUM_OF_SENSORS; i++) {
-                printf("%d\t", global_args_1.measurements_1[i]);
+                printf("%d\t", global_args.measurements[i]);
             }
             printf("\n");
             
@@ -954,7 +949,7 @@ int main (int argc, char **argv)
     closeRS485(&comm_settings_1);
     
     
-    if(global_args_1.flag_verbose)
+    if(global_args.flag_verbose)
         puts("Closing the application."); 
 
 #ifdef PHIDGETS_BRIDGE
@@ -1009,14 +1004,14 @@ void int_handler(int sig) {
     printf("\nForced quit!!!\n");
     
     //if necessary close log file
-    if (global_args_1.flag_log) {
-        fclose(global_args_1.log_file_fd);
+    if (global_args.flag_log) {
+        fclose(global_args.log_file_fd);
 
         // erase last line of log file  /////////////BEGIN
         char *tmpfilename = "tmpfile~~~";
         char line[1000];
         char command[256];
-        FILE *thefile = fopen(global_args_1.log_file, "r");
+        FILE *thefile = fopen(global_args.log_file, "r");
         FILE *tmpfile = fopen(tmpfilename, "w");
 
         while (fgets(line, sizeof(line), thefile))
@@ -1029,16 +1024,16 @@ void int_handler(int sig) {
         strcpy(command, "mv ");
         strcat(command, tmpfilename);
         strcat(command, " ");
-        strcat(command, global_args_1.log_file);
+        strcat(command, global_args.log_file);
 
         system(command);
         // erase last line of log file  ///////////////END
     }
 
     // set motors to 0,0
-    global_args_1.inputs[0] = 0;
-    global_args_1.inputs[1] = 0;
-    commSetInputs(&comm_settings_1, global_args_1.device_id_1, global_args_1.inputs);
+    global_args.inputs[0] = 0;
+    global_args.inputs[1] = 0;
+    commSetInputs(&comm_settings_1, global_args.device_id, global_args.inputs);
 
 
     exit(1);
@@ -1052,24 +1047,24 @@ void int_handler_2(int sig) {
 
     //Set the offsets equal to minus current positions
     for (i = 0; i < NUM_OF_SENSORS; i++) {
-        global_args_1.measurement_offset[i] = -global_args_1.measurements_1[i];
+        global_args.measurement_offset[i] = -global_args.measurements[i];
     }
 
-    commSetParam(&comm_settings_1, global_args_1.device_id_1,
-            PARAM_MEASUREMENT_OFFSET, global_args_1.measurement_offset,
+    commSetParam(&comm_settings_1, global_args.device_id,
+            PARAM_MEASUREMENT_OFFSET, global_args.measurement_offset,
             NUM_OF_SENSORS);
 
-    commStoreParams(&comm_settings_1, global_args_1.device_id_1);
+    commStoreParams(&comm_settings_1, global_args.device_id);
 
     sleep(1);
 
     // set motors to 0,0
-    global_args_1.inputs[0] = 0;
-    global_args_1.inputs[1] = 0;
-    commSetInputs(&comm_settings_1, global_args_1.device_id_1, global_args_1.inputs);
+    global_args.inputs[0] = 0;
+    global_args.inputs[1] = 0;
+    commSetInputs(&comm_settings_1, global_args.device_id, global_args.inputs);
 
     //Activate board 
-    commActivate(&comm_settings_1, global_args_1.device_id_1, 1);
+    commActivate(&comm_settings_1, global_args.device_id, 1);
 
     exit(1);
 }
@@ -1085,26 +1080,30 @@ void int_handler_2(int sig) {
 
 void display_usage( void )
 {
-    puts("==========================================================================================");
+    puts("================================================================================");
     puts( "qbmove - communicate with your QB Move" );
-    puts("=========================================================================================="); 
+    puts("================================================================================"); 
     puts( "usage: qbmove [id] [OPTIONS]" );
-    puts("------------------------------------------------------------------------------------------"); 
+    puts("--------------------------------------------------------------------------------"); 
     puts("Options:");
     puts("");
     puts(" -s, --set_inputs <value,value>   Send reference inputs to the QB Move.");
     puts(" -g, --get_measurements           Get measurements from the QB Move.");
+    puts(" -c, --get_currents               Get motor currents");
     puts(" -a, --activate                   Activate the QB Move.");
     puts(" -d, --deactivate                 Deactivate the QB Move.");
+    puts(" -z, --set_zeros                  Set zero position for all sensors");
+    puts("");
+    puts(" -k, --use_gen_sin                Sinusoidal inputs using sin.conf file");
+    puts(" -f, --file <filename>            Pass a CSV file as input");
     puts("");
     puts(" -p, --ping                       Get info on the device.");
 	puts(" -t, --serial_port                Set up serial port.");
+    puts(" -b, --bootloader                 Enter bootloader mode.");
     puts(" -v, --verbose                    Verbose mode.");
     puts(" -h, --help                       Shows this information.");
 	puts("");
-    puts(" -z, --set_zeros                  Set zero position for all sensors");
-    puts(" -k, --use_gen_sin                Generate sinusoidal inputs using sin.conf file");
-	puts(" -f, --file <filename>            Pass a CSV file as input");
+    
     puts("                                  File is in the form:");
     puts("                                  millisecs,num_rows");
     puts("                                  input1_1,input2_1");
@@ -1115,7 +1114,7 @@ void display_usage( void )
     puts(" -l, --log                        Use in combination with -f to");
     puts("                                  save a log of the positions in");
     puts("                                  a file named filename_log");
-    puts("------------------------------------------------------------------------------------------"); 
+    puts("--------------------------------------------------------------------------------"); 
     puts("Examples:");
     puts("");
     puts("  qbmove -p                       Get info on whatever device is connected.");
@@ -1127,7 +1126,7 @@ void display_usage( void )
     puts("  qbmove 65 -a 1                  Turn device 65 on.");
     puts("  qbmove 65 -a 0                  Turn device 65 off.");
     puts("  qbmove 65 -f filename           Pilot device 65 using file 'filename'");    
-    puts("==========================================================================================");
+    puts("================================================================================");
     /* ... */
     exit( EXIT_FAILURE );
 }

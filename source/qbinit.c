@@ -225,6 +225,7 @@ int set_proportional_gain() {
 
 	printf("Setting PID parameters: %f, %f, %f",
 			pid_control[0], pid_control[1], pid_control[2]);
+	fflush(stdout);
 
 	while(1) {
 		//set
