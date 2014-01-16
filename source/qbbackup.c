@@ -15,6 +15,7 @@
 
 int open_port();
 int retrieve_id();
+int retrieve_serial();
 int retrieve_offsets();
 int create_file();
 int write_file();
@@ -24,6 +25,8 @@ int close_file();
 //==================================================================     globals
 
 int device_id;
+char port[255];
+char* serial;
 comm_settings comm_settings_t;
 short int offsets[NUM_OF_SENSORS];
 FILE* filep;
@@ -36,6 +39,8 @@ int main() {
 	assert(open_port());
 
     assert(retrieve_id());
+
+    assert(retrieve_serial());
 
     assert(retrieve_offsets());
 
@@ -56,7 +61,6 @@ int main() {
 
 int open_port() {
 	FILE *file;
-	char port[255];
 
 	file = fopen(QBMOVE_FILE, "r");
 
@@ -65,7 +69,7 @@ int open_port() {
         return 0;
     }
 
-    fscanf(file, "serialport1 %s\n", port);
+    fscanf(file, "serialport %s\n", port);
 
     fclose(file);
 
@@ -105,6 +109,19 @@ int retrieve_id() {
 	return 1;
 }
 
+int retrieve_serial() {
+
+    serial = strtok(port, "-");
+    serial = strtok(NULL, "-");
+    if (serial == NULL) {
+        printf("Could not retrieve serial\n");
+        return 0;
+    }
+    printf("Current serial: %s\n", serial);
+
+    return 1;
+}
+
 int retrieve_offsets() {
     int i;
 
@@ -126,41 +143,57 @@ int retrieve_offsets() {
 
     usleep(500000);
 
+    printf("DONE\n");
+
     printf("Offsets: ");
     for (i = 0; i < NUM_OF_SENSORS; i++) {
         printf("%d\t", offsets[i]);
     }
     printf("\n");
 
-    printf("DONE\n");
-
     return 1;
 }
 
 int create_file() {
     char filename[255];
+    char folder[255];
     char aux[16];
     char reply;
 
-    strcpy(filename, QBBACKUP_FOLDER);
+    printf("It is a New or Old QB? [N/O]: ");
+    scanf("%c", &reply);
+    while (1) {
+        if (reply == 'n' || reply == 'N') {
+            strcpy(folder, NEW_QBBACKUP_FOLDER);
+            break;
+        } else if (reply == 'o' || reply == 'O') {
+            strcpy(folder, OLD_QBBACKUP_FOLDER);
+            break;
+        } else {
+            printf("Invalid option choose 'o' or 'n': ");
+            scanf(" %c", &reply);
+        }
+    }
+
+    strcpy(filename, folder);
     strcat(filename, "backup_");
-    sprintf(aux, "%d", device_id);
-    strcat(filename, aux);
+    strcat(filename, serial);
     strcat(filename, ".bkp");
 
-    if(!access(filename, W_OK)) {
-        printf("File already exists. Do you want to overwrite it? [y,N]\n");
-        while(1) {
-            reply = getchar();
-            if ((reply != 'n') && (reply != 'N') && (reply != 'y') && (reply != 'Y')) {
-                printf("Invalid input. Only 'Y' or 'N'\n");
-                continue;
-            } else {
-                break;
-            }
-        }
+    reply = 'Y';
+    printf("New filename: %s   Is it correct?: [Y/n]\n", filename);
+    reply = getchar();
+    if (reply == 'n' || reply == 'N') {
+        return 0;
+    }
 
-        if ((reply == 'N') || (reply == 'n')) {
+    if(!access(filename, W_OK)) {
+        getchar();
+        reply = 'N';
+        printf("File already exists. Do you want to overwrite it? [y,N]\n");
+        reply = getchar();
+
+        if ((reply != 'Y') && (reply != 'y')) {
             return 0;
         }
     }

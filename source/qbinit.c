@@ -13,12 +13,13 @@
 
 //=============================================================     declarations
 
+int mode_selection();
 int port_selection(char*);
 int open_port(char*);
 int restore_params();
 int change_id();
 int set_resolution(int);
-int set_proportional_gain();
+int set_pid_parameters();
 int adjust_zeros();
 int get_info();
 int test();
@@ -29,6 +30,7 @@ int backup();
 
 int device_id;
 comm_settings comm_settings_t;
+int mode;
 
 //==============================================================================
 //																			main
@@ -38,6 +40,8 @@ int main(int argc, char **argv){
 	char port[255];
 	device_id = BROADCAST_ID;
 
+	mode = mode_selection();
+
 	assert(port_selection(port));
 
 	assert(open_port(port));
@@ -46,11 +50,15 @@ int main(int argc, char **argv){
 
 	assert(change_id());
 
-	assert(set_proportional_gain());
+	assert(set_pid_parameters());
 
 	assert(set_resolution(DEFAULT_RESOLUTION));
 
 	assert(adjust_zeros());
+
+	if (mode) {
+		commRestoreParams(&comm_settings_t, device_id);
+	}
 
 	assert(get_info());
 
@@ -67,6 +75,18 @@ int main(int argc, char **argv){
 
 //==========================================================     other functions
 
+
+int mode_selection() {
+	int value;
+
+	printf("Old version or New version EEPROM storing?\n");
+	printf("0 - Old\n");
+	printf("1 - New\n");
+	scanf("%d", &value);
+
+	printf("scelta: %d\n", value);
+	return value;
+}
 
 int port_selection(char* my_port){
 	int i;
@@ -98,9 +118,7 @@ int port_selection(char* my_port){
 			if (file == NULL) {
 				printf("Cannot open qbmove.conf\n");
 			}
-			fprintf(file,"serialport1 %s\n", my_port);
-			fprintf(file,"port_2_enabled %d\n", 0);
-			fprintf(file,"serialport2 %s\n", my_port);
+			fprintf(file,"serialport %s\n", my_port);
 			fclose(file);
 			return 1;
 
@@ -133,14 +151,23 @@ int restore_params() {
 	printf("Restoring factory settings...");
 	fflush(stdout);
 
-	//I need something to check that the restore has gone well
-	for (i = 0; i < 3; i++) {
-		commRestoreParams(&comm_settings_t, device_id);
-		usleep(500000);
-	}
+	if (mode) {
+		i = 1;
+		while(commInitMem(&comm_settings_t, device_id)) {
+			printf("Try #%d\n", i++);
+			usleep(500000);
+		}
+	} else {
+		i = 1;
+		while(commRestoreParams(&comm_settings_t, device_id)) {
+			printf("Try #%d\n", i++);
+			usleep(500000);
+		}
+	}	
+	
 
     printf("Done.\n");
-    return 1;
+    return 1;	
 }
 
 
@@ -153,17 +180,16 @@ int change_id() {
 	fflush(stdout);
 	while(1) {
 		//set
-		commSetParam(&comm_settings_t, BROADCAST_ID,
-	            PARAM_ID, &device_id, 1);
-		usleep(100000);
-	    commStoreParams(&comm_settings_t, BROADCAST_ID);
-	    usleep(500000);
+		while(commSetParam(&comm_settings_t, BROADCAST_ID, PARAM_ID, &device_id, 1));
+		if (mode) {
+			while(commStoreDefaultParams(&comm_settings_t, BROADCAST_ID));
+		} else {
+			while(commStoreParams(&comm_settings_t, BROADCAST_ID));
+		}
 
 	    //check
-	    while(commGetParam(&comm_settings_t, BROADCAST_ID,
-	    		PARAM_ID, &aux, 1)) {
-	    	usleep(500000);
-	    }
+	    while(commGetParam(&comm_settings_t, BROADCAST_ID, PARAM_ID, &aux, 1));
+
 	    if (aux == device_id)
 	    	break;
 	}
@@ -188,17 +214,16 @@ int set_resolution(int res) {
 	j = 1;
 	while(j) {
 		//set
-		commSetParam(&comm_settings_t, device_id,
-	            PARAM_POS_RESOLUTION, pos_resolution, NUM_OF_SENSORS);
-		usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(1000000);
+		while(commSetParam(&comm_settings_t, device_id, PARAM_POS_RESOLUTION, pos_resolution, NUM_OF_SENSORS));
+	    if (mode) {
+	    	while(commStoreDefaultParams(&comm_settings_t, device_id));
+	    } else {
+	    	while(commStoreParams(&comm_settings_t, device_id));	
+	    }
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id,
-	    		PARAM_POS_RESOLUTION, aux, NUM_OF_SENSORS)) {
-	    	usleep(500000);
-	    }
+	    		PARAM_POS_RESOLUTION, aux, NUM_OF_SENSORS));
 
 	    for (i = 0; i < NUM_OF_SENSORS; i++) {
 	    	if (aux[i] != pos_resolution[i]) {
@@ -214,7 +239,7 @@ int set_resolution(int res) {
 	return 1;
 }
 
-int set_proportional_gain() {
+int set_pid_parameters() {
 	float pid_control[3];
 	float aux[3];
 	fflush(stdout);
@@ -223,29 +248,30 @@ int set_proportional_gain() {
 	pid_control[1] = DEFAULT_PID_I;
 	pid_control[2] = DEFAULT_PID_D;
 
-	printf("Setting PID parameters: %f, %f, %f",
+	printf("Setting PID parameters: %f, %f, %f\n",
 			pid_control[0], pid_control[1], pid_control[2]);
 	fflush(stdout);
 
 	while(1) {
 		//set
-		commSetParam(&comm_settings_t, device_id,
-	            PARAM_PID_CONTROL, pid_control, 3);
-		usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(1000000);
+		while(commSetParam(&comm_settings_t, device_id,
+	            PARAM_PID_CONTROL, pid_control, 3));
+		if (mode) {
+			while(commStoreDefaultParams(&comm_settings_t, device_id));
+		} else {
+			while(commStoreParams(&comm_settings_t, device_id));
+		}
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id,
-	    		PARAM_PID_CONTROL, aux, 3)) {
-	    	usleep(500000);
+	    		PARAM_PID_CONTROL, aux, 3));
+
+
+	    if ((aux[0] < pid_control[0] + 0.0001) || (aux[0] > pid_control[0] - 0.0001)) {
+	    	if ((aux[2] < pid_control[2] + 0.0001) || (aux[2] > pid_control[2] - 0.0001)) {
+	    		break;
+	    	}
 	    }
-
-	    printf("Retrieved values: %f, %f, %f\n", aux[0], aux[1], aux[2]);
-
-
-	    if ((aux[0] < pid_control[0] + 0.0001) || (aux[0] > pid_control[0] - 0.0001))
-	    	break;
 	}
 
     printf("DONE\n");
@@ -269,20 +295,19 @@ int adjust_zeros(){
     j = 1;
     while(j) {
     	//set
-	    commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	            measurements_off, NUM_OF_SENSORS);
-	    usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(1000000);
+	    while(commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
+	            measurements_off, NUM_OF_SENSORS));
+	    if (mode) {
+	    	while(commStoreDefaultParams(&comm_settings_t, device_id));
+	    } else {
+	    	while(commStoreParams(&comm_settings_t, device_id));
+	    }
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	    		aux, NUM_OF_SENSORS)) {
-	    	usleep(500000);
-	    }
+	    		aux, NUM_OF_SENSORS));
+
 	    for (i = 0; i < NUM_OF_SENSORS; i++) {
-	    	printf("offset4 %d\n", measurements_off[i]);
-	    	printf("aux4: %d\n", aux[i]);
 	    	if (aux[i] != measurements_off[i]) {
 	    		j = 1;
 	    		break;
@@ -293,16 +318,7 @@ int adjust_zeros(){
 	}
 
     // Reading current position
-    j = 1;
-    while(j) {
-    	j = commGetMeasurements(&comm_settings_t, device_id, measurements);
-    	usleep(100000);
-    	printf("measurements: ");
-    	for (i = 0; i < NUM_OF_SENSORS; i++) {
-    		printf("%d\t", measurements[i]);
-    	}
-    	printf("\n");
-    }
+    while(commGetMeasurements(&comm_settings_t, device_id, measurements));
 
     // Prepare offsets for setting zero
     for (i = 0; i < NUM_OF_SENSORS; i++) {
@@ -313,21 +329,19 @@ int adjust_zeros(){
     j = 1;
     while(j) {
     	//set
-	    commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	            measurements_off, NUM_OF_SENSORS);
-	    usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(1000000);
+	    while(commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
+	            measurements_off, NUM_OF_SENSORS));
+	   	if (mode) {
+	   		while(commStoreDefaultParams(&comm_settings_t, device_id));
+	   	} else {
+	   		while(commStoreParams(&comm_settings_t, device_id));
+	   	}
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	    		aux, NUM_OF_SENSORS)) {
-	    	usleep(500000);
-	    }
+	    		aux, NUM_OF_SENSORS));
 
 	    for (i = 0; i < NUM_OF_SENSORS; i++) {
-	    	printf("offset2 %d\n", measurements_off[i]);
-	    	printf("aux2: %d\n", aux[i]);
 	    	if (aux[i] != measurements_off[i]) {
 	    		j = 1;
 	    		break;
@@ -342,7 +356,7 @@ int adjust_zeros(){
     while (1) {
     	//set
 		commActivate(&comm_settings_t, device_id, 1);
-		usleep(500000);
+		usleep(100000);
 
 		//check
 		commGetActivate(&comm_settings_t, device_id, &aux_char);
@@ -426,7 +440,7 @@ int adjust_zeros(){
     while (1) {
     	//set
 		commActivate(&comm_settings_t, device_id, 0);
-		usleep(500000);
+		usleep(100000);
 
 		//check
 		commGetActivate(&comm_settings_t, device_id, &aux_char);
@@ -442,20 +456,19 @@ int adjust_zeros(){
     j = 1;
     while(j) {
     	//set
-	    commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	            measurements_off, NUM_OF_SENSORS);
-	    usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(1000000);
+	    while(commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
+	            measurements_off, NUM_OF_SENSORS));
+	    if (mode) {
+	    	while(commStoreDefaultParams(&comm_settings_t, device_id));
+	    } else {
+	    	while(commStoreParams(&comm_settings_t, device_id));
+	    }
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	    		aux, NUM_OF_SENSORS)) {
-	    	usleep(500000);
-	    }
+	    		aux, NUM_OF_SENSORS));
+
 	    for (i = 0; i < NUM_OF_SENSORS; i++) {
-	    	printf("offset1 %d\n", measurements_off[i]);
-	    	printf("aux1: %d\n", aux[i]);
 	    	if (aux[i] != measurements_off[i]) {
 	    		j = 1;
 	    		break;
@@ -466,16 +479,7 @@ int adjust_zeros(){
 	}
 
 	// Reading current position
-    j = 1;
-    while(j) {
-    	j = commGetMeasurements(&comm_settings_t, device_id, measurements);
-    	usleep(100000);
-    	printf("measurements: ");
-    	for (i = 0; i < NUM_OF_SENSORS; i++) {
-    		printf("%d\t", measurements[i]);
-    	}
-    	printf("\n");
-    }
+	while(commGetMeasurements(&comm_settings_t, device_id, measurements));
 
     // Prepare offsets for setting zero
     for (i = 0; i < NUM_OF_SENSORS; i++) {
@@ -488,21 +492,19 @@ int adjust_zeros(){
 
     j = 1;
     while(j) {
-	    commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	            measurements_off, NUM_OF_SENSORS);
-	    usleep(100000);
-	    commStoreParams(&comm_settings_t, device_id);
-	    usleep(2000000);
+	    while(commSetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
+	            measurements_off, NUM_OF_SENSORS));
+	   	if (mode) {
+	   		while(commStoreDefaultParams(&comm_settings_t, device_id));
+	   	} else {
+	   		while(commStoreParams(&comm_settings_t, device_id));
+	   	}
 
 	    //check
 	    while(commGetParam(&comm_settings_t, device_id, PARAM_MEASUREMENT_OFFSET,
-	    		aux, NUM_OF_SENSORS)) {
-	    	usleep(500000);
-	    }
+	    		aux, NUM_OF_SENSORS));
 
 	    for (i = 0; i < NUM_OF_SENSORS; i++) {
-	    	printf("offset %d\n", measurements_off[i]);
-	    	printf("aux: %d\n", aux[i]);
 	    	if (aux[i] != measurements_off[i]) {
 	    		j = 1;
 	    		break;

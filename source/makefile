@@ -10,7 +10,7 @@ LMFLAGS = -lm
 #SOURCES = qbmove.c qbmoveadmin.c qbinit.c qbtest.c qb_pos_stiff_demo.c qbbackup.c
 
 
-all:qbmove qbmoveadmin qbinit qbtest qb_pos_stiff_demo qbbackup
+all:qbmove qbmoveadmin qbinit qbtest qb_pos_stiff_demo qbbackup qbparam
 
     
 qbmove:objs/qbmove.o objs/qbmove_communications.o bin
@@ -30,6 +30,10 @@ qb_pos_stiff_demo:objs/qb_pos_stiff_demo.o objs/qbmove_communications.o bin
 
 qbbackup:objs/qbbackup.o objs/qbmove_communications.o bin
 	$(COMPILER) objs/qbbackup.o objs/qbmove_communications.o -o bin/qbbackup $(LMFLAGS)
+
+qbparam:objs/qbparam.o objs/qbmove_communications.o bin
+	$(COMPILER) objs/qbparam.o objs/qbmove_communications.o -o bin/qbparam $(LMFLAGS)
+
 
 
 objs/qbmove.o:qbmove.c objs
@@ -52,6 +56,12 @@ objs/qb_pos_stiff_demo.o:qb_pos_stiff_demo.c objs
 
 objs/qbbackup.o:qbbackup.c objs
 	$(COMPILER) $(CFLAGS) qbbackup.c -o objs/qbbackup.o
+
+objs/qbparam.o:qbparam.c objs
+	$(COMPILER) $(CFLAGS) qbparam.c -o objs/qbparam.o
+
+
+
 
 clean:
 	rm -rf *.o bin objs

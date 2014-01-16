@@ -80,17 +80,18 @@ static const struct option longOpts[] = {
     { "help", no_argument, NULL, 'h' },
     { "set_limit", no_argument, NULL, 'q' },
     { "activate_limit", required_argument, NULL, 'w' },
+    { "max_step", no_argument, NULL, 'b'},
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "g:i:kadmsu:o:f:z:prltvhqw:?";
+static const char *optString = "g:i:kadmsu:o:f:z:prltvhqw:b?";
 
 struct structglobal_args {
     int device_id;
     // int flag_set_inputs;     /* -s option */
     int flag_get_measurements;  /* -g option */
     int flag_id;                /* -i option */
-    int flag_pid_control;         /* -k option */
+    int flag_pid_control;       /* -k option */
     int flag_activation;        /* -a option */
     int flag_deactivation;      /* -d option */    
     int flag_pos_resolution;    /* -s option */    
@@ -106,6 +107,7 @@ struct structglobal_args {
     int flag_verbose;           /* -v option */
     int flag_set_limit;         /* -q option */
     int flag_activate_limit;    /* -w option */
+    int flag_max_step;          /* -b option */
     
     unsigned char           new_id;
     unsigned char           input_mode;
@@ -119,6 +121,8 @@ struct structglobal_args {
     float                   deadzone;
     unsigned char           startup_activation;
     unsigned char           activate_limit;
+    int                     max_step_pos;
+    int                     max_step_neg;
 } global_args;
 
 //=====================================================     function definitions
@@ -167,6 +171,7 @@ int main (int argc, char **argv)
     global_args.flag_ping           = 0;
     global_args.flag_restore        = 0;
     global_args.flag_verbose        = 0;
+    global_args.flag_max_step       = 0;
 
 //=======================================================     processing options
 
@@ -282,6 +287,13 @@ int main (int argc, char **argv)
             global_args.activate_limit = aux_int;
             global_args.flag_activate_limit = 1;
             break;
+        case 'b':
+            printf("Set the new values for max step:\nmax_step_pos: ");
+            scanf("%d", &global_args.max_step_pos);
+            printf("max_step_neg: ");
+            scanf("%d", &global_args.max_step_neg);
+            global_args.flag_max_step = 1;
+            break;
         case 'h':
         case '?':
         default:
@@ -315,7 +327,7 @@ int main (int argc, char **argv)
                 if( aux_int && (aux_int <= num_ports) )
                 {
                     file = fopen(QBMOVE_FILE, "w");
-                    fprintf(file,"serialport1 %s",ports[aux_int-1]);
+                    fprintf(file,"serialport %s",ports[aux_int-1]);
                     fclose(file);                    
                 }
                 else puts("Choice not available");
@@ -334,7 +346,7 @@ int main (int argc, char **argv)
         puts("Reading configuration file.");
     
     file = fopen(QBMOVE_FILE, "r");
-    fscanf(file, "serialport1 %s", port_s);
+    fscanf(file, "serialport %s", port_s);
 
     if(global_args.flag_verbose)
         printf("Serial port: %s.\n",port_s);
@@ -562,40 +574,6 @@ int main (int argc, char **argv)
         return 0;
     }
 
-//=====================================     setting parameter measurement filter
-    
-    if(global_args.flag_filter)
-    {
-        if(global_args.flag_verbose)
-            puts("Changing measurement filter.");
-            
-        commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_MEAS_FILTER, &global_args.filter, 1);
-        commStoreParams(&comm_settings_t, global_args.device_id);
-                            
-        if(global_args.flag_verbose)
-            puts("Closing the application.");        
-        
-        return 0;
-    }
-
-//=====================================     setting parameter control deadzone
-    
-    if(global_args.flag_deadzone)
-    {
-        if(global_args.flag_verbose)
-            puts("Changing measurement filter.");
-            
-        commSetParam(&comm_settings_t, global_args.device_id,
-            PARAM_CONTROL_DEADZONE, &global_args.deadzone, 1);
-        commStoreParams(&comm_settings_t, global_args.device_id);
-                            
-        if(global_args.flag_verbose)
-            puts("Closing the application.");
-        
-        return 0;
-    }
-
 //=======================================     restore factory default parameters
     
     if(global_args.flag_restore)
@@ -636,6 +614,17 @@ int main (int argc, char **argv)
     if (global_args.flag_activate_limit) {
         commSetParam(&comm_settings_t, global_args.device_id,
             PARAM_POS_LIMIT_FLAG, &(global_args.activate_limit), 1);
+        commStoreParams(&comm_settings_t, global_args.device_id);
+    }
+
+//=============================================================     set max step
+
+    if (global_args.flag_max_step) {
+        commSetParam(&comm_settings_t, global_args.device_id,
+            PARAM_MAX_STEP_POS, &(global_args.max_step_pos), 1);
+        commSetParam(&comm_settings_t, global_args.device_id,
+            PARAM_MAX_STEP_NEG, &(global_args.max_step_neg), 1);
+        usleep(100000);
         commStoreParams(&comm_settings_t, global_args.device_id);
     }
 
@@ -705,6 +694,7 @@ void display_usage( void )
     puts("  qbmoveadmin 65 -f 0.1               Sets measurement filter to 0.1.");
     puts("  qbmoveadmin 65 -z 0                 Sets position controller deadzone none.");
     puts("  qbmoveadmin 65 -r                   Restore factory parameters.");
+    puts("  qbmoveadmin 65 -q                   Set limit for min and max position of both motors");
     puts("  qbmoveadmin 65 -w [1 or 0]          Set or reset position limit");
     puts("==========================================================================================");
     /* ... */

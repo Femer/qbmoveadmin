@@ -20,4 +20,5 @@
 #define SIN_FILE "./conf_files/sin.conf"
 #define MOTOR_FILE "./conf_files/motor.conf"
 #define QBMOVE_FILE "./conf_files/qbmove.conf"
-#define QBBACKUP_FOLDER "./../qb_backup/"
+#define OLD_QBBACKUP_FOLDER "./../old_qb_backup/"
+#define NEW_QBBACKUP_FOLDER "./../new_qb_backup/"

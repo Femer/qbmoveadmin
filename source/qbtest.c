@@ -110,7 +110,7 @@ int open_port() {
 
 	file = fopen(QBMOVE_FILE, "r");
 
-    fscanf(file, "serialport1 %s\n", port);
+    fscanf(file, "serialport %s\n", port);
 
     fclose(file);
 

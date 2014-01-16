@@ -55,10 +55,11 @@ static const struct option longOpts[] = {
     { "use_gen_sin", no_argument, NULL, 'k'},
     { "get_currents", no_argument, NULL, 'c'},
     { "bootloader", no_argument, NULL, 'b'},
+    { "set_pos_stiff", required_argument, NULL, 'e'},
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "s:adgptvh?f:lwzkcb";
+static const char *optString = "s:adgptvh?f:lwzkcbe:";
 
 struct global_args {
     int device_id;
@@ -76,9 +77,11 @@ struct global_args {
     int flag_use_gen_sin;           /* -k option */
     int flag_get_currents;          /* -c option */
     int flag_bootloader_mode;       /* -b option */
+    int flag_set_pos_stiff;         /* -e option */
 
 
     short int inputs[NUM_OF_MOTORS];
+    float pos, stiff;
     short int measurements[NUM_OF_SENSORS];
     short int measurement_offset[NUM_OF_SENSORS];
     short int currents[NUM_OF_MOTORS];
@@ -249,6 +252,7 @@ int main (int argc, char **argv)
     
     char aux_string[10000]; // used to store PING reply
     int  aux[3];             // used to store input during set_inputs
+    float aux_pos, aux_stiff;
 
     int  option;             // used for processing options
     int  longIndex = 0;
@@ -265,10 +269,11 @@ int main (int argc, char **argv)
     global_args.flag_set_inputs         = 0;
     global_args.flag_file               = 0;
     global_args.flag_log                = 0;
-    global_args.flag_test				  = 0;
+    global_args.flag_test			    = 0;
     global_args.flag_set_zeros          = 0;
     global_args.flag_use_gen_sin        = 0;
     global_args.flag_bootloader_mode    = 0;
+    global_args.flag_set_pos_stiff      = 0;
     
     //===================================================     processing options
 
@@ -281,6 +286,12 @@ int main (int argc, char **argv)
                 global_args.inputs[0] = (short int) aux[0];
                 global_args.inputs[1] = (short int) aux[1];
                 global_args.flag_set_inputs = 1;
+                break;
+            case 'e':
+                sscanf(optarg,"%f,%f",&aux_pos,&aux_stiff);
+                global_args.pos = aux_pos;
+                global_args.stiff = aux_stiff;
+                global_args.flag_set_pos_stiff = 1;
                 break;
             case 'g':
                 global_args.flag_get_measurements = 1;
@@ -527,18 +538,33 @@ int main (int argc, char **argv)
 
     }
 
+
+    //===========================================================     set inputs
+
+    if(global_args.flag_set_pos_stiff)
+    {
+        if(global_args.flag_verbose)
+            printf("Setting pos to %f and stiffness to %f.\n",
+                    global_args.pos, global_args.stiff);
+
+        commSetPosStiff(&comm_settings_1, global_args.device_id,
+                &global_args.pos, &global_args.stiff);
+
+    }
+
+
 //=====================================================     get measurements
 
     if(global_args.flag_get_measurements)
     {
 
-        short int my_values[2 + NUM_OF_SENSORS];
+        // short int my_values[2 + NUM_OF_SENSORS];
 
-        commGetCurrAndMeas(&comm_settings_1, global_args.device_id,
-                my_values);
+        // commGetCurrAndMeas(&comm_settings_1, global_args.device_id,
+        //         my_values);
 
-        printf("currents: %d, %d\n", my_values[0], my_values[1]);
-        printf("meas: %d %d %d\n", my_values[2], my_values[3], my_values[4]);
+        // printf("currents: %d, %d\n", my_values[0], my_values[1]);
+        // printf("meas: %d %d %d\n", my_values[2], my_values[3], my_values[4]);
         
         // if(global_args.flag_verbose)
         //     puts("Getting measurements.");
@@ -552,21 +578,27 @@ int main (int argc, char **argv)
   //       }
   //       printf("\n");
 
-        // commGetMeasurements(&comm_settings_1, global_args.device_id,
-        //         global_args.measurements);
+        while(1) {
+            commGetMeasurements(&comm_settings_1, global_args.device_id,
+                    global_args.measurements);
 
-        // printf("measurements: ");
-        // for (i = 0; i < NUM_OF_SENSORS; i++) {
-        //     printf("%d\t", global_args.measurements[i]);
-        // }
-        // printf("\n");
-        
+            printf("measurements: ");
+            for (i = 0; i < NUM_OF_SENSORS; i++) {
+                printf("%d\t", global_args.measurements[i]);
+            }
+            printf("\n");
+            usleep(100000);
+        }
     }
 
     if(global_args.flag_bootloader_mode) {
         printf("Entering bootloader mode\n");
-        commBootloader(&comm_settings_1, global_args.device_id);
-        printf("DONE\n");
+        if(!commBootloader(&comm_settings_1, global_args.device_id)) {
+            printf("DONE\n");    
+        } else {
+            printf("An error occurred...\n");
+        }
+        
     }
     
 //==========================================================     get_currents
