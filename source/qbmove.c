@@ -1120,6 +1120,7 @@ void display_usage( void )
     puts("Options:");
     puts("");
     puts(" -s, --set_inputs <value,value>   Send reference inputs to the QB Move.");
+    puts(" -e, --set_pos_stiff <pos, stiff> Set position (degree) and stiffness (\%)");
     puts(" -g, --get_measurements           Get measurements from the QB Move.");
     puts(" -c, --get_currents               Get motor currents");
     puts(" -a, --activate                   Activate the QB Move.");

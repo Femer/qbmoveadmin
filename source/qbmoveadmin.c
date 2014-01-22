@@ -674,6 +674,8 @@ void display_usage( void )
     puts(" -t, --serial_port                    Set up serial port.");
     puts(" -q, --set_limit                      Set up limits for motor maximum range");
     puts(" -w, --activate_limit                 Set or reset limits position");
+    puts(" -b, --max_step                       Set maximum number of step per cycle to slow");
+    puts("                                      down movements");
     puts("");
     puts(" -v, --verbose                        Verbose mode.");
     puts(" -h, --help                           Shows this information.");

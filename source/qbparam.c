@@ -11,6 +11,7 @@ int open_port();
 int initMemory();
 void printMainMenu();
 void printParamMenu();
+int calibrate();
 
 // global variables
 char get_or_set;
@@ -43,6 +44,9 @@ int main() {
 			break;
 		case 'm':
 			initMemory();
+			break;
+		case 'c':
+			calibrate();
 			break;
 
 		default:
@@ -205,10 +209,23 @@ int initMemory() {
 	return 0;
 }
 
+int calibrate() {
+	printf("Calibrating...");
+	fflush(stdout);
+	if(!commCalibrate(&comm_settings_t, BROADCAST_ID)) {
+		printf("DONE\n");
+		return 1;
+	} else {
+		printf("FAILED\n");
+		return 0;
+	}
+}
+
 void printMainMenu() {
 	printf("g: getParam\n");
 	printf("s: setParam\n");
 	printf("m: initMemory\n");
+	printf("c: calibrate\n");
 }
 
 void printParamMenu() {
