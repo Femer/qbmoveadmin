@@ -592,15 +592,15 @@ int main (int argc, char **argv)
 //======================================================     set position limits
 
     if (global_args.flag_set_limit) {
-        int32_t limits[4];
+        short int limits[4];
         printf("\nInf limit 1: ");
-        scanf("%d", limits);
+        scanf("%hd", limits);
         printf("\nSup limit 1: ");
-        scanf("%d", limits + 1);
+        scanf("%hd", limits + 1);
         printf("\nInf limit 2: ");
-        scanf("%d", limits + 2);
+        scanf("%hd", limits + 2);
         printf("\nSup limit 2: ");
-        scanf("%d", limits + 3);
+        scanf("%hd", limits + 3);
 
         printf("limits: %d, %d, %d, %d\n", limits[0], limits[1], limits[2], limits[3]);
         commSetParam(&comm_settings_t, global_args.device_id,

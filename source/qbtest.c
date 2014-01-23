@@ -43,7 +43,7 @@ int open_port();
 int cycle();
 void int_handler(int sig);
 
-//==================================================================     globals
+//=========================================================     global variables
 
 comm_settings comm_settings_t;
 int device_id = BROADCAST_ID;
@@ -130,6 +130,7 @@ int open_port() {
 int cycle() {
 	static int i, j;
 	short int inputs[NUM_OF_MOTORS];
+	
 
 	// CTRL-C handler
     signal(SIGINT, int_handler);

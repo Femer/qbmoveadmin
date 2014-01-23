@@ -81,7 +81,6 @@ struct global_args {
 
 
     short int inputs[NUM_OF_MOTORS];
-    float pos, stiff;
     short int measurements[NUM_OF_SENSORS];
     short int measurement_offset[NUM_OF_SENSORS];
     short int currents[NUM_OF_MOTORS];
@@ -252,7 +251,6 @@ int main (int argc, char **argv)
     
     char aux_string[10000]; // used to store PING reply
     int  aux[3];             // used to store input during set_inputs
-    float aux_pos, aux_stiff;
 
     int  option;             // used for processing options
     int  longIndex = 0;
@@ -282,15 +280,15 @@ int main (int argc, char **argv)
         switch (option)
         {
             case 's':
-                sscanf(optarg,"%d,%d",&aux[0],&aux[1]);
+                sscanf(optarg,"%d,%d", &aux[0], &aux[1]);
                 global_args.inputs[0] = (short int) aux[0];
                 global_args.inputs[1] = (short int) aux[1];
                 global_args.flag_set_inputs = 1;
                 break;
             case 'e':
-                sscanf(optarg,"%f,%f",&aux_pos,&aux_stiff);
-                global_args.pos = aux_pos;
-                global_args.stiff = aux_stiff;
+                sscanf(optarg,"%d,%d", &aux[0], &aux[1]);
+                global_args.inputs[0] = (short int) aux[0];
+                global_args.inputs[1] = (short int) aux[1];
                 global_args.flag_set_pos_stiff = 1;
                 break;
             case 'g':
@@ -539,21 +537,21 @@ int main (int argc, char **argv)
     }
 
 
-    //===========================================================     set inputs
+    //========================================================     set pos stiff
 
     if(global_args.flag_set_pos_stiff)
     {
         if(global_args.flag_verbose)
-            printf("Setting pos to %f and stiffness to %f.\n",
-                    global_args.pos, global_args.stiff);
+            printf("Setting pos to %d and stiffness to %d.\n",
+                    global_args.inputs[0], global_args.inputs[1]);
 
         commSetPosStiff(&comm_settings_1, global_args.device_id,
-                &global_args.pos, &global_args.stiff);
+                &global_args.inputs);
 
     }
 
 
-//=====================================================     get measurements
+//=========================================================     get measurements
 
     if(global_args.flag_get_measurements)
     {
@@ -1120,7 +1118,7 @@ void display_usage( void )
     puts("Options:");
     puts("");
     puts(" -s, --set_inputs <value,value>   Send reference inputs to the QB Move.");
-    puts(" -e, --set_pos_stiff <pos, stiff> Set position (degree) and stiffness (\%)");
+    puts(" -e, --set_pos_stiff <pos,stiff>  Set position (degree) and stiffness (\%)");
     puts(" -g, --get_measurements           Get measurements from the QB Move.");
     puts(" -c, --get_currents               Get motor currents");
     puts(" -a, --activate                   Activate the QB Move.");
