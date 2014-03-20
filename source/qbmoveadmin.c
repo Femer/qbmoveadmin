@@ -68,6 +68,7 @@ static const struct option longOpts[] = {
     { "deactivate_on_startup", required_argument, NULL, 'd' },
     { "resolution", no_argument, NULL, 's' },
     { "input_mode", no_argument, NULL, 'm' },
+    { "control_mode", no_argument, NULL, 'M'},
     { "meas_multiplier", required_argument, NULL, 'u' },
     { "meas_offset", required_argument, NULL, 'o' },
     { "filter", required_argument, NULL, 'f' },
@@ -84,7 +85,7 @@ static const struct option longOpts[] = {
     { NULL, no_argument, NULL, 0 }
 };
 
-static const char *optString = "g:i:kadmsu:o:f:z:prltvhqw:b?";
+static const char *optString = "g:i:kadmMsu:o:f:z:prltvhqw:b?";
 
 struct structglobal_args {
     int device_id;
@@ -95,7 +96,8 @@ struct structglobal_args {
     int flag_activation;        /* -a option */
     int flag_deactivation;      /* -d option */    
     int flag_pos_resolution;    /* -s option */    
-    int flag_input_mode;        /* -m option */    
+    int flag_input_mode;        /* -m option */
+    int flag_control_mode;      /* -M option */    
     int flag_meas_multiplier;   /* -u option */    
     int flag_meas_offset;       /* -o option */    
     int flag_filter;            /* -f option */    
@@ -111,6 +113,7 @@ struct structglobal_args {
     
     unsigned char           new_id;
     unsigned char           input_mode;
+    unsigned char           control_mode;
     unsigned char           pos_resolution[NUM_OF_SENSORS];    
     unsigned short int      meas_offset;
     short int               measurement_offset[NUM_OF_SENSORS];
@@ -211,6 +214,15 @@ int main (int argc, char **argv)
             scanf("%d",&aux_int);
             global_args.input_mode = aux_int;
             global_args.flag_input_mode = 1;
+            break;
+        case 'M':
+            puts("Choose control mode:\n");
+            puts("[0] - Position");
+            puts("[1] - PWM");
+            puts("[2] - Current\n");
+            scanf("%d", &aux_int);
+            global_args.control_mode = aux_int;
+            global_args.flag_control_mode = 1;
             break;
         case 's':
             puts("[0] - 360  degrees.");
@@ -522,6 +534,26 @@ int main (int argc, char **argv)
         
         return 0;
     }
+
+
+//==============================================    setting parameter control mode
+    
+    if(global_args.flag_control_mode)
+    {
+        if(global_args.flag_verbose)
+            puts("Changing control mode.");
+            
+        commSetParam(&comm_settings_t, global_args.device_id,
+            PARAM_CONTROL_MODE, &global_args.control_mode, 1);
+        commStoreParams(&comm_settings_t, global_args.device_id);
+                                
+        if(global_args.flag_verbose)
+            puts("Closing the application.");        
+        
+        return 0;
+    }
+
+
 
 //====================================     setting parameter position resolution
     

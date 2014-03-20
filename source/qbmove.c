@@ -48,7 +48,7 @@ static const struct option longOpts[] = {
     { "serial_port", no_argument, NULL, 't' },
     { "verbose", no_argument, NULL, 'v' },
     { "help", no_argument, NULL, 'h' },
-	{ "file", required_argument, NULL, 'f'},
+    { "file", required_argument, NULL, 'f'},
     { "log", no_argument, NULL, 'l'},
     { "test_force", no_argument, NULL, 'w'},
     { "set_zeros", no_argument, NULL, 'z'},
@@ -70,9 +70,9 @@ struct global_args {
     int flag_ping;                  /* -p option */
     int flag_serial_port;           /* -t option */
     int flag_verbose;               /* -v option */
-    int flag_file;					/* -f option */
+    int flag_file;                  /* -f option */
     int flag_log;                   /* -l option */
-    int flag_test;					/* -w option */
+    int flag_test;                  /* -w option */
     int flag_set_zeros;             /* -z option */
     int flag_use_gen_sin;           /* -k option */
     int flag_get_currents;          /* -c option */
@@ -145,85 +145,85 @@ void int_handler_2(int sig);
 
     int CCONV AttachHandler(CPhidgetHandle phid, void *userptr)
     {
-    	CPhidgetBridgeHandle bridge = (CPhidgetBridgeHandle)phid;
+        CPhidgetBridgeHandle bridge = (CPhidgetBridgeHandle)phid;
 
-    	CPhidgetBridge_setEnabled(bridge, 0, PTRUE);
-    	CPhidgetBridge_setEnabled(bridge, 1, PFALSE);
-    	CPhidgetBridge_setEnabled(bridge, 2, PFALSE);
-    	CPhidgetBridge_setEnabled(bridge, 3, PFALSE);
+        CPhidgetBridge_setEnabled(bridge, 0, PTRUE);
+        CPhidgetBridge_setEnabled(bridge, 1, PFALSE);
+        CPhidgetBridge_setEnabled(bridge, 2, PFALSE);
+        CPhidgetBridge_setEnabled(bridge, 3, PFALSE);
 
-    	CPhidgetBridge_setGain(bridge, 0, PHIDGET_BRIDGE_GAIN_128);
-    	CPhidgetBridge_setGain(bridge, 1, PHIDGET_BRIDGE_GAIN_16);
-    	CPhidgetBridge_setGain(bridge, 2, PHIDGET_BRIDGE_GAIN_32);
-    	CPhidgetBridge_setGain(bridge, 3, PHIDGET_BRIDGE_GAIN_64);
-    	CPhidgetBridge_setDataRate(bridge, 1);
+        CPhidgetBridge_setGain(bridge, 0, PHIDGET_BRIDGE_GAIN_128);
+        CPhidgetBridge_setGain(bridge, 1, PHIDGET_BRIDGE_GAIN_16);
+        CPhidgetBridge_setGain(bridge, 2, PHIDGET_BRIDGE_GAIN_32);
+        CPhidgetBridge_setGain(bridge, 3, PHIDGET_BRIDGE_GAIN_64);
+        CPhidgetBridge_setDataRate(bridge, 1);
 
-    	printf("Attach handler ran!\n");
-    	return 0;
+        printf("Attach handler ran!\n");
+        return 0;
     }
 
     int CCONV DetachHandler(CPhidgetHandle phid, void *userptr)
     {
-    	printf("Detach handler ran!\n");
-    	return 0;
+        printf("Detach handler ran!\n");
+        return 0;
     }
 
     int CCONV ErrorHandler(CPhidgetHandle phid, void *userptr, int ErrorCode, const char *errorStr)
     {
-    	printf("Error event: %s\n",errorStr);
-    	return 0;
+        printf("Error event: %s\n",errorStr);
+        return 0;
     }
 
     void display_generic_properties(CPhidgetHandle phid)
     {
-    	int sernum, version;
-    	const char *deviceptr;
-    	CPhidget_getDeviceType(phid, &deviceptr);
-    	CPhidget_getSerialNumber(phid, &sernum);
-    	CPhidget_getDeviceVersion(phid, &version);
+        int sernum, version;
+        const char *deviceptr;
+        CPhidget_getDeviceType(phid, &deviceptr);
+        CPhidget_getSerialNumber(phid, &sernum);
+        CPhidget_getDeviceVersion(phid, &version);
 
-    	printf("%s\n", deviceptr);
-    	printf("Version: %8d SerialNumber: %10d\n", version, sernum);
-    	return;
+        printf("%s\n", deviceptr);
+        printf("Version: %8d SerialNumber: %10d\n", version, sernum);
+        return;
     }
 
     int CCONV data(CPhidgetBridgeHandle phid, void *userPtr, int index, double val)
-    {	
+    {   
         current_force = m*val + q;
 
-    	return 0;
+        return 0;
     }
 
 
     void test()
     {
-    	//gettimeofday(&t_ref, &foo);
-    	
-        const char *err;	
-    	int result;
-    	CPhidgetBridgeHandle bridge;
+        //gettimeofday(&t_ref, &foo);
+        
+        const char *err;    
+        int result;
+        CPhidgetBridgeHandle bridge;
 
-    	CPhidgetBridge_create(&bridge);
+        CPhidgetBridge_create(&bridge);
 
-    	CPhidget_set_OnAttach_Handler((CPhidgetHandle)bridge, AttachHandler, NULL);
-    	CPhidget_set_OnDetach_Handler((CPhidgetHandle)bridge, DetachHandler, NULL);
-    	CPhidget_set_OnError_Handler((CPhidgetHandle)bridge, ErrorHandler, NULL);
-    	CPhidgetBridge_set_OnBridgeData_Handler(bridge, data, NULL);
+        CPhidget_set_OnAttach_Handler((CPhidgetHandle)bridge, AttachHandler, NULL);
+        CPhidget_set_OnDetach_Handler((CPhidgetHandle)bridge, DetachHandler, NULL);
+        CPhidget_set_OnError_Handler((CPhidgetHandle)bridge, ErrorHandler, NULL);
+        CPhidgetBridge_set_OnBridgeData_Handler(bridge, data, NULL);
 
-    	CPhidget_open((CPhidgetHandle)bridge, -1);
+        CPhidget_open((CPhidgetHandle)bridge, -1);
 
-    	//Wait for 1 second, otherwise exit
-    	if(result = CPhidget_waitForAttachment((CPhidgetHandle)bridge, 1000))
-    	{
+        //Wait for 1 second, otherwise exit
+        if(result = CPhidget_waitForAttachment((CPhidgetHandle)bridge, 1000))
+        {
 
-    		CPhidget_getErrorDescription(result, &err);
-    		printf("Problem waiting for attachment: %s\n", err);
-    		return;
-    	}
+            CPhidget_getErrorDescription(result, &err);
+            printf("Problem waiting for attachment: %s\n", err);
+            return;
+        }
 
-    	display_generic_properties((CPhidgetHandle)bridge);
+        display_generic_properties((CPhidgetHandle)bridge);
 
-    	return;
+        return;
     }
 
 #endif
@@ -255,6 +255,8 @@ int main (int argc, char **argv)
     int  option;             // used for processing options
     int  longIndex = 0;
 
+    char aux_char;
+
     // initializations
 
     global_args.device_id               = 0;
@@ -267,7 +269,7 @@ int main (int argc, char **argv)
     global_args.flag_set_inputs         = 0;
     global_args.flag_file               = 0;
     global_args.flag_log                = 0;
-    global_args.flag_test			    = 0;
+    global_args.flag_test               = 0;
     global_args.flag_set_zeros          = 0;
     global_args.flag_use_gen_sin        = 0;
     global_args.flag_bootloader_mode    = 0;
@@ -323,8 +325,8 @@ int main (int argc, char **argv)
                 global_args.flag_set_zeros = 1;
                 break;
             case 'w':
-            	global_args.flag_test = 1;
-            	break;
+                global_args.flag_test = 1;
+                break;
             case 'c':
                 global_args.flag_get_currents = 1;
                 break;
@@ -367,39 +369,39 @@ int main (int argc, char **argv)
 
             if( aux_int && (aux_int <= num_ports) )
             {
-            	tmp = aux_int;                    
+                tmp = aux_int;                    
             }
             else puts("Choice not available");
 
         } else {
             puts("No serial port available.");
-		}
+        }
 
-		if (num_ports - 1 > 0)
-		{
-			puts("\nChoose serial port 2:\n");
-			for(i = 0; i < num_ports; ++i)
-			{
-				printf("[%d] - %s ", i+1, ports[i]);
-				if (i == tmp - 1) {
-					printf("[unavailable] ");
-				}              
-				printf("\n\n");
-			}
-			printf("Serial port: ");
-			scanf("%d", &aux_int);
-		}
-		if( aux_int && (aux_int <= num_ports) )
-		{
-			file = fopen(QBMOVE_FILE, "w+");
-			if (file == NULL) {
-				printf("Cannot open qbmove.conf\n");
-			}
-			fprintf(file,"serialport %s\n",ports[tmp-1]);
-			fclose(file);                    
-		} else {
-			puts("Choice not available");
-		}
+        if (num_ports - 1 > 0)
+        {
+            puts("\nChoose serial port 2:\n");
+            for(i = 0; i < num_ports; ++i)
+            {
+                printf("[%d] - %s ", i+1, ports[i]);
+                if (i == tmp - 1) {
+                    printf("[unavailable] ");
+                }              
+                printf("\n\n");
+            }
+            printf("Serial port: ");
+            scanf("%d", &aux_int);
+        }
+        if( aux_int && (aux_int <= num_ports) )
+        {
+            file = fopen(QBMOVE_FILE, "w+");
+            if (file == NULL) {
+                printf("Cannot open qbmove.conf\n");
+            }
+            fprintf(file,"serialport %s\n",ports[tmp-1]);
+            fclose(file);                    
+        } else {
+            puts("Choice not available");
+        }
         
         return 0;
     }    
@@ -452,8 +454,8 @@ int main (int argc, char **argv)
 
         return 0;
     } else {
-    	if(global_args.flag_verbose)
-    		puts("Serial port 1 connected");        
+        if(global_args.flag_verbose)
+            puts("Serial port 1 connected");        
     }
 
 
@@ -570,7 +572,7 @@ int main (int argc, char **argv)
         // commGetParam(&comm_settings_1, global_args.device_id,
         //         PARAM_MEASUREMENT_OFFSET, global_args.measurements,3);
 
-		// printf("Offsets: ");
+        // printf("Offsets: ");
   //       for (i = 0; i < NUM_OF_SENSORS; i++) {
   //           printf("%d\t", global_args.measurements[i]);
   //       }
@@ -622,6 +624,10 @@ int main (int argc, char **argv)
         if(global_args.flag_verbose)
            puts("Turning QB Move on.\n");
         commActivate(&comm_settings_1, global_args.device_id, 1);
+
+        commGetActivate(&comm_settings_1, global_args.device_id, &aux_char);
+
+        printf("%c %d\n", aux_char, (int)aux_char);
     }
     
 //===============================================================     deactivate
@@ -797,7 +803,7 @@ int main (int argc, char **argv)
 #endif
 
         // VERBOSE ONLY
-		if(global_args.flag_verbose) {
+        if(global_args.flag_verbose) {
             printf("Parsing file %s\n", global_args.filename);
         }
 
@@ -838,7 +844,7 @@ int main (int argc, char **argv)
             while (1) {
                 gettimeofday(&t_act, &foo);
                 if (timevaldiff(&begin, &t_act) >= i*deltat*1000) {
-                	break;
+                    break;
                 }
             }
 
@@ -917,14 +923,14 @@ int main (int argc, char **argv)
     
     //===========================================================     test force
     if(global_args.flag_test)
-    {	
-    	printf("Flag_test\n");
+    {   
+        printf("Flag_test\n");
 
         #ifdef PHIDGETS_BRIDGE
-    	   test();
+           test();
         #endif
 
-    	getchar();
+        getchar();
     }   
 
 
@@ -983,8 +989,8 @@ int main (int argc, char **argv)
         puts("Closing the application."); 
 
 #ifdef PHIDGETS_BRIDGE
-	CPhidget_close((CPhidgetHandle)bridge);
-	CPhidget_delete((CPhidgetHandle)bridge);
+    CPhidget_close((CPhidgetHandle)bridge);
+    CPhidget_delete((CPhidgetHandle)bridge);
 #endif
     
     return 0;
@@ -1129,11 +1135,11 @@ void display_usage( void )
     puts(" -f, --file <filename>            Pass a CSV file as input");
     puts("");
     puts(" -p, --ping                       Get info on the device.");
-	puts(" -t, --serial_port                Set up serial port.");
+    puts(" -t, --serial_port                Set up serial port.");
     puts(" -b, --bootloader                 Enter bootloader mode.");
     puts(" -v, --verbose                    Verbose mode.");
     puts(" -h, --help                       Shows this information.");
-	puts("");
+    puts("");
     
     puts("                                  File is in the form:");
     puts("                                  millisecs,num_rows");

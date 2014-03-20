@@ -32,11 +32,11 @@ short int offsets[NUM_OF_SENSORS];
 FILE* filep;
 
 //==============================================================================
-//																			main
+//                                                                          main
 //==============================================================================
 
 int main() {
-	assert(open_port());
+    assert(open_port());
 
     assert(retrieve_id());
 
@@ -54,15 +54,15 @@ int main() {
 
     printf("Configuration saved!\n");
 
-	return 1;
+    return 1;
 }
 
 //==========================================================     other functions
 
 int open_port() {
-	FILE *file;
+    FILE *file;
 
-	file = fopen(QBMOVE_FILE, "r");
+    file = fopen(QBMOVE_FILE, "r");
 
     if (file == NULL) {
         printf("Could not open configuration file\n");
@@ -95,8 +95,8 @@ int retrieve_id() {
     printf("Retrieving ID...");
     fflush(stdout);
 
-	commGetParam(&comm_settings_t, BROADCAST_ID,
-	    		PARAM_ID, &device_id, 1);
+    commGetParam(&comm_settings_t, BROADCAST_ID,
+                PARAM_ID, &device_id, 1);
 
     if (device_id == 0) {
         printf("Could not retrieve a good ID\n");
@@ -106,7 +106,7 @@ int retrieve_id() {
 
     printf("DONE\n");
 
-	return 1;
+    return 1;
 }
 
 int retrieve_serial() {

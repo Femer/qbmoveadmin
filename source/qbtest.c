@@ -130,7 +130,8 @@ int open_port() {
 int cycle() {
 	static int i, j;
 	short int inputs[NUM_OF_MOTORS];
-	
+	short int measurements_1[NUM_OF_SENSORS];
+	short int measurements_2[NUM_OF_SENSORS];
 
 	// CTRL-C handler
     signal(SIGINT, int_handler);
@@ -146,11 +147,17 @@ int cycle() {
 		commSetInputs(&comm_settings_t, device_id, inputs);
 		usleep(DELAY);
 
+		while(commGetMeasurements(&comm_settings_t, device_id, measurements_1));
+
 		inputs[0] = SUP_LIMIT;
 		inputs[1] = SUP_LIMIT;		
 
 		commSetInputs(&comm_settings_t, device_id, inputs);
 		usleep(DELAY);
+
+		while(commGetMeasurements(&comm_settings_t, device_id, measurements_2));
+
+		printf("difference between output shaft and pulleys:\n1: %d\t2: %d\n", measurements_1[2] - measurements_1[0], measurements_2[2] - measurements_2[0]);
 	}
 
 	// set to zero

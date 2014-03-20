@@ -12,7 +12,7 @@ LMFLAGS = -lm
 
 all:qbmove qbmoveadmin qbinit qbtest qb_pos_stiff_demo qbbackup qbparam
 
-    
+
 qbmove:objs/qbmove.o objs/qbmove_communications.o bin
 	$(COMPILER) $(PFLAGS) objs/qbmove.o objs/qbmove_communications.o -o bin/qbmove $(LMFLAGS)
 
