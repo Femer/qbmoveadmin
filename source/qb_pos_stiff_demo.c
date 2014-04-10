@@ -8,8 +8,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include <termios.h>
 #include <unistd.h>
+
+#if !(defined(_WIN32) || defined(_WIN64))
+    #include <termios.h>
+#endif
 
 //=============================================================     declarations
 
@@ -122,6 +125,7 @@ int pilot_pos_stiff(){
     pos = 0;
     stiff = 0;
 
+    #if !(defined(_WIN32) || defined(_WIN64))
     //---- tty inizialization ---- BEGIN
 
     static struct termios oldt, newt;
@@ -143,6 +147,7 @@ int pilot_pos_stiff(){
     tcsetattr( STDIN_FILENO, TCSANOW, &newt);
     
     //---- tty inizialization ---- END
+    #endif
 
     while(c != 'x') {
         c = getchar();
@@ -186,8 +191,10 @@ int pilot_pos_stiff(){
     // Deactivate motors
     commActivate(&comm_settings_t, device_id, 0);
 
+    #if !(defined(_WIN32) || defined(_WIN64))
     // Restore the old tty settings
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
+    #endif
 
     return 1;
 }

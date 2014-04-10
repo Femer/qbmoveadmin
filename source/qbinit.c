@@ -8,8 +8,17 @@
 #include <string.h>
 #include <assert.h>
 
-#include <termios.h>
 #include <unistd.h>
+
+#if !(defined(_WIN32) || defined(_WIN64))
+    #include <termios.h>
+#endif
+
+#if (defined(_WIN32) || defined(_WIN64))
+    #include <conio.h>
+    #include <Windows.h>
+    #define usleep(x) Sleep((x) / 1000)
+#endif
 
 //=============================================================     declarations
 
@@ -66,7 +75,9 @@ int main(int argc, char **argv){
 
     assert(test());
 
-    assert(backup());
+    #if !(defined(_WIN32) || defined(_WIN64))
+        assert(backup());
+    #endif
 
     printf("===== Configuration completed. =====\n");
 
@@ -95,7 +106,7 @@ int port_selection(char* my_port){
             scanf("%d", &aux_int);
             
             if( aux_int && (aux_int <= num_ports) ) {
-                strcpy(my_port, ports[aux_int - 1]);          
+                strcpy(my_port, ports[aux_int - 1]);
             } else {
                 puts("Choice not available");
                 continue;
@@ -176,7 +187,7 @@ int change_id() {
 
 
 int set_resolution(int res) {
-    int i,j;
+    int i, j;
     unsigned char pos_resolution[NUM_OF_SENSORS];
     unsigned char aux[NUM_OF_SENSORS];
 
@@ -344,6 +355,7 @@ int adjust_zeros(){
         current_ref[i] = 0;
     }
 
+	#if !(defined(_WIN32) || defined(_WIN64))
     //---- tty inizialization ---- BEGIN
 
     static struct termios oldt, newt;
@@ -365,9 +377,14 @@ int adjust_zeros(){
     tcsetattr( STDIN_FILENO, TCSANOW, &newt);
     
     //---- tty inizialization ---- END
+	#endif
 
     while(c != 'x') {
-        c = getchar();
+        #if !(defined(_WIN32) || defined(_WIN64))
+            c = getchar();
+        #else
+            c = getch();
+        #endif
         switch(c) {
             case 'q':
                 current_ref[0] += DEFAULT_INCREMENT * DEG_TICK_MULTIPLIER;
@@ -399,8 +416,10 @@ int adjust_zeros(){
         commSetInputs(&comm_settings_t, device_id, current_ref);
     }
 
+	#if !(defined(_WIN32) || defined(_WIN64))
     // Restore the old tty settings
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt);
+	#endif
 
 
     // Deactivate motors
@@ -486,13 +505,18 @@ int adjust_zeros(){
 int test() {
     char c;
 
+    fflush(stdin);
     printf("Do you want to perform a test cycle? [Y,n]\n");
     c = getchar();
     if (c == 'n' || c == 'N') {
         return 1;
     }
 
-    system("./bin/qbtest -r 1");
+    #if !(defined(_WIN32) || defined(_WIN64))
+        system("./bin/qbtest -r 1");
+    #else
+        system("bin\\qbtest -r 1");
+    #endif
 
     return 1;
 }
@@ -510,7 +534,9 @@ int get_info() {
 
 int calibrate() {
     char c;
+    int i;
 
+    fflush(stdin);
     printf("Do you want to auto-calibrate stiffness? [Y,n]\n");
     c = getchar();
     if (c == 'n' || c == 'N') {
@@ -521,7 +547,9 @@ int calibrate() {
     fflush(stdout);
     if(!commCalibrate(&comm_settings_t, BROADCAST_ID)) {
         printf("EXECUTING: wait for the end of calibration\n");
-        sleep(20);
+        for (i = 0; i < 100; i++) {
+            usleep(200000);
+        }
         return 1;
     } else {
         printf("FAILED\n");
@@ -531,7 +559,12 @@ int calibrate() {
 
 int backup() {
 
-    system("./bin/qbbackup");
+    #if !(defined(_WIN32) || defined(_WIN64))
+        system("./bin/qbbackup");
+    #else
+        system("bin\\qbbackup");
+    #endif
+
     return 1;
 }
 /* END OF FILE */

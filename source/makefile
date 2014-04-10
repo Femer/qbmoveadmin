@@ -64,7 +64,12 @@ objs/qbparam.o:qbparam.c objs
 
 
 clean:
+ifeq "$(OS)"  "Windows_NT"
+	erase /Q /S objs
+	erase /Q /S bin
+else
 	rm -rf *.o bin objs
+endif
 
 objs:
 	mkdir objs

@@ -22,11 +22,6 @@
 #include <math.h>
 #include <signal.h>
 
-// #include <unistd.h>  /* UNIX standard function definitions */
-// #include <fcntl.h>   /* File control definitions */
-// #include <errno.h>   /* Error number definitions */
-// #include <termios.h> /* POSIX terminal control definitions */
-// #include <sys/ioctl.h>
 
 #ifdef PHIDGETS_BRIDGE
     #include <phidget21.h>
@@ -34,6 +29,7 @@
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <windows.h>
+	#define sleep(x) Sleep(1000 * x)
 #endif
 
 //===============================================================     structures
@@ -548,7 +544,7 @@ int main (int argc, char **argv)
                     global_args.inputs[0], global_args.inputs[1]);
 
         commSetPosStiff(&comm_settings_1, global_args.device_id,
-                &global_args.inputs);
+                global_args.inputs);
 
     }
 
@@ -582,11 +578,18 @@ int main (int argc, char **argv)
             commGetMeasurements(&comm_settings_1, global_args.device_id,
                     global_args.measurements);
 
-            printf("measurements: ");
+            printf("measurements * 8: ");
+            for (i = 0; i < NUM_OF_SENSORS; i++) {
+                printf("%d\t", (short int)(global_args.measurements[i] * 8));
+            }
+            printf("\n");
+
+            printf("measurements:     ");
             for (i = 0; i < NUM_OF_SENSORS; i++) {
                 printf("%d\t", global_args.measurements[i]);
             }
             printf("\n");
+
             usleep(100000);
         }
     }

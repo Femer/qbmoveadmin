@@ -8,7 +8,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <unistd.h>
+
 #include <signal.h>
+
+#if (defined(_WIN32) || defined(_WIN64))
+    #include <Windows.h>
+    #define usleep(x) Sleep((x) / 1000)
+#endif
 
 //==================================================================     defines
 
@@ -89,7 +96,7 @@ int main(int argc, char **argv){
     	while(repetitions) {
     		if ((repetitions % BATCH_CYCLES) == 0) {
     			printf("Having a pause :)\n");
-    			sleep(PAUSE);
+    			usleep(PAUSE*1000000);
     		}
     		repetitions--;
     		printf("Remaining cycles: %d\n", repetitions);
@@ -234,8 +241,11 @@ void int_handler(int sig) {
 
 	commSetInputs(&comm_settings_t, device_id, inputs);
 
+    device_id = 100;
+
 	usleep(2000000);
 
+    device_id = BROADCAST_ID;
 	commActivate(&comm_settings_t, device_id, 0);
 
 	exit(0);
@@ -249,7 +259,7 @@ void print_usage() {
 	printf("--------------------------------------------------------------------\n");
 	printf("OPTIONS:\n");
 	printf(" -t, --set_time <value>             Set time in minutes for the test\n");
-	printf(" -r, --set_repetitions <value>      Set number of cycle to perform\n");
+	printf(" -r, --set_repetitions <value>      Set number of cycle to perform  \n");
 	printf("====================================================================\n");
 	return;
 }

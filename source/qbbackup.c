@@ -8,9 +8,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include <termios.h>
 #include <unistd.h>
 
+#if !(defined(_WIN32) || defined(_WIN64))
+    #include <termios.h>
+#endif
 //=============================================================     declarations
 
 int open_port();
