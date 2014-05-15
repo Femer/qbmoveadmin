@@ -607,6 +607,7 @@ int main (int argc, char **argv)
 //==========================================================     get_currents
 
     if(global_args.flag_get_currents) {
+
         if(global_args.flag_verbose)
             puts("Getting currents.");
 
@@ -615,6 +616,7 @@ int main (int argc, char **argv)
                 global_args.currents);
 
             printf("Current 1: %d\t Current 2: %d\n", global_args.currents[0], global_args.currents[1]);
+            fflush(stdout);
             usleep(100000);
         }
     }
