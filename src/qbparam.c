@@ -1,5 +1,5 @@
 // --- INCLUDE ---
-#include "qbmoveAPI/qbmove_communications.h"
+#include "../../qbmoveAPI/src/qbmove_communications.h"
 #include "definitions.h"
 
 #include <assert.h>

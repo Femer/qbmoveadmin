@@ -9,7 +9,7 @@
 
 //=================================================================     includes
 
-#include "qbmoveAPI/qbmove_communications.h"
+#include "../../qbmoveAPI/src/qbmove_communications.h"
 #include "definitions.h"
 
 #include <stdio.h>
@@ -424,8 +424,6 @@ int main (int argc, char **argv)
     fscanf(file, "gear_ratio_2 %f\n", &gear_ratio[1]);
 
     fclose(file);
-
-    
 
     if(global_args.flag_verbose)
         printf("Gear ratio 1: %f\nGear ratio 2: %f\n",
@@ -1022,9 +1020,9 @@ float** file_parser( char* filename, int* deltat, int* num_values )
         fscanf(filep, "%d,%d", deltat, num_values);
 
         //alloc memory for the arrays
-        array = malloc(2*sizeof(float*));
-        array[0] = malloc(*num_values*sizeof(float));
-        array[1] = malloc(*num_values*sizeof(float));
+        array = (float**)malloc(2*sizeof(float*));
+        array[0] = (float*)malloc(*num_values*sizeof(float));
+        array[1] = (float*)malloc(*num_values*sizeof(float));
 
         //read num_values line of file and store them in array
         for(i=0; i<*num_values; i++) {
@@ -1049,7 +1047,7 @@ void int_handler(int sig) {
         fclose(global_args.log_file_fd);
 
         // erase last line of log file  /////////////BEGIN
-        char *tmpfilename = "tmpfile~~~";
+        const char *tmpfilename = "tmpfile~~~";
         char line[1000];
         char command[256];
         FILE *thefile = fopen(global_args.log_file, "r");

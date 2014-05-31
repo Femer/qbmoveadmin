@@ -149,3 +149,11 @@ source/20.txt
 source/30.txt
 source/qbmoveadmin.sublime-project
 source/qbmoveadmin.sublime-workspace
+bin
+bin/qb_pos_stiff_demo
+bin/qbbackup
+bin/qbinit
+bin/qbmove
+bin/qbmoveadmin
+bin/qbparam
+bin/qbtest

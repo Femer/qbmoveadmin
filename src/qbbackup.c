@@ -1,6 +1,6 @@
 //=================================================================     includes
 
-#include "qbmoveAPI/qbmove_communications.h"
+#include "../../qbmoveAPI/src/qbmove_communications.h"
 #include "definitions.h"
 
 #include <stdio.h>
@@ -19,6 +19,7 @@ int open_port();
 int retrieve_id();
 int retrieve_serial();
 int retrieve_offsets();
+int read_conf_file();
 int create_file();
 int write_file();
 int close_file();
@@ -32,6 +33,7 @@ char* serial;
 comm_settings comm_settings_t;
 short int offsets[NUM_OF_SENSORS];
 FILE* filep;
+char backup_folder[512];
 
 //==============================================================================
 //                                                                          main
@@ -45,6 +47,8 @@ int main() {
     assert(retrieve_serial());
 
     assert(retrieve_offsets());
+
+    assert(read_conf_file());
 
     assert(create_file());
 
@@ -156,41 +160,38 @@ int retrieve_offsets() {
     return 1;
 }
 
-int create_file() {
-    char filename[255];
-    char folder[255];
-    char aux[16];
-    char reply;
+int read_conf_file() {
+    FILE* conf_file;
 
-    printf("It is a New or Old QB? [N/O]: ");
-    scanf("%c", &reply);
-    while (1) {
-        if (reply == 'n' || reply == 'N') {
-            strcpy(folder, NEW_QBBACKUP_FOLDER);
-            break;
-        } else if (reply == 'o' || reply == 'O') {
-            strcpy(folder, OLD_QBBACKUP_FOLDER);
-            break;
-        } else {
-            printf("Invalid option choose 'o' or 'n': ");
-            scanf(" %c", &reply);
-        }
-    }
-
-    strcpy(filename, folder);
-    strcat(filename, "backup_");
-    strcat(filename, serial);
-    strcat(filename, ".bkp");
-
-    reply = 'Y';
-    printf("New filename: %s   Is it correct?: [Y/n]\n", filename);
-    reply = getchar();
-    if (reply == 'n' || reply == 'N') {
+    conf_file = fopen(QBBACKUP_FILE, "r");
+    if (conf_file == NULL) {
+        printf("Cannot open conf file\n");
         return 0;
     }
 
+    fscanf(conf_file, "backup_folder: %s\n", backup_folder);
+
+    printf("%s\n", backup_folder);
+
+    fclose(conf_file);
+
+    return 1;
+}
+
+int create_file() {
+    char filename[512];
+    char aux[16];
+    char reply;
+
+
+    strcpy(filename, backup_folder);
+    strcat(filename, "/backup_");
+    strcat(filename, serial);
+    strcat(filename, ".bkp");
+
+    printf("%s\n", filename);
+
     if(!access(filename, W_OK)) {
-        getchar();
         reply = 'N';
         printf("File already exists. Do you want to overwrite it? [y,N]\n");
         reply = getchar();
