@@ -9,7 +9,7 @@
 
 //=================================================================     includes
 
-#include "../../qbmoveAPI/src/qbmove_communications.h"
+#include "../../qbAPI/src/qbmove_communications.h"
 #include "definitions.h"
 
 #include <stdio.h>

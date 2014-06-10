@@ -1,6 +1,6 @@
 //=================================================================     includes
 
-#include "../../qbmoveAPI/src/qbmove_communications.h"
+#include "../../qbAPI/src/qbmove_communications.h"
 #include "definitions.h"
 
 #include <stdio.h>
@@ -178,6 +178,7 @@ int pilot_pos_stiff(){
         }
 
         set_pos_stiff(&pos, &stiff);
+        printf("                            \r");
         printf("Pos: %d, Stiff %d\t\t\r", (int)(pos / DEG_TICK_MULTIPLIER), (int)(stiff));
         //commSetInputs(&comm_settings_t, device_id, current_ref);
     }
