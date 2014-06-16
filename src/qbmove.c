@@ -506,10 +506,9 @@ int main (int argc, char **argv)
             commGetInfo(&comm_settings_1, global_args.device_id, INFO_ALL, aux_string);            
         } else {
             RS485GetInfo(&comm_settings_1,  aux_string);
-            printf("len of aux_String: %d\n", (int)strlen(aux_string));
-            puts(aux_string);
         }
-       
+       printf("len of aux_String: %d\n", (int)strlen(aux_string));
+       puts(aux_string);
 
         //puts(aux_string);
 
